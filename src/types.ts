@@ -22,9 +22,17 @@ export type Installment = {
   firstBillingMonth: string // 'YYYY-MM' 첫 청구월
 }
 
+// 고정지출 분류 (사용자가 직접 생성)
+export type Category = {
+  id: string
+  name: string
+  color: string
+}
+
 export type FixedExpense = {
   id: string
   assetId: string
+  categoryId?: string // 없으면 미분류
   label: string
   amount: number
   startMonth: string // 'YYYY-MM'
@@ -33,6 +41,7 @@ export type FixedExpense = {
 
 export type AppData = {
   assets: Asset[]
+  categories: Category[]
   installments: Installment[]
   fixedExpenses: FixedExpense[]
 }

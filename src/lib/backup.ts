@@ -3,6 +3,7 @@ import type { AppData } from '../types'
 export function exportJson(data: AppData): void {
   const payload: AppData = {
     assets: data.assets,
+    categories: data.categories,
     installments: data.installments,
     fixedExpenses: data.fixedExpenses,
   }
@@ -37,6 +38,7 @@ export function parseImport(text: string): AppData {
       : []
   const data = {
     assets: assetsRaw,
+    categories: Array.isArray(raw.categories) ? raw.categories : [],
     installments: remap(raw.installments),
     fixedExpenses: remap(raw.fixedExpenses),
   } as unknown as AppData

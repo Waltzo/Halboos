@@ -1,18 +1,38 @@
-import { useStore, countAssetRefs } from '../store'
+import { useStore, countAssetRefs, countCategoryRefs } from '../store'
 import AssetBadge from './AssetBadge'
 import { formatKRW, formatMonthKr } from '../lib/format'
 import { lastBillingMonth, totalFee } from '../lib/installment'
+import type { FixedExpense } from '../types'
 import type { ModalState } from '../App'
 
 export default function Registry({ onEdit }: { onEdit: (m: ModalState) => void }) {
   const assets = useStore((s) => s.assets)
+  const categories = useStore((s) => s.categories)
   const installments = useStore((s) => s.installments)
   const fixedExpenses = useStore((s) => s.fixedExpenses)
   const removeAsset = useStore((s) => s.removeAsset)
+  const removeCategory = useStore((s) => s.removeCategory)
   const removeInstallment = useStore((s) => s.removeInstallment)
   const removeFixed = useStore((s) => s.removeFixedExpense)
 
   const assetName = (id: string) => assets.find((a) => a.id === id)?.name ?? '(삭제된 자산)'
+  const fixedTotal = fixedExpenses.reduce((s, f) => s + f.amount, 0)
+
+  // 카테고리별 고정지출 묶음 (없는 카테고리를 참조하는 항목도 미분류로)
+  const known = new Set(categories.map((c) => c.id))
+  const groups: { key: string; name: string; color?: string; items: FixedExpense[] }[] = [
+    ...categories.map((c) => ({
+      key: c.id,
+      name: c.name,
+      color: c.color,
+      items: fixedExpenses.filter((f) => f.categoryId === c.id),
+    })),
+    {
+      key: '',
+      name: '미분류',
+      items: fixedExpenses.filter((f) => !f.categoryId || !known.has(f.categoryId)),
+    },
+  ].filter((g) => g.items.length > 0)
 
   const delAsset = (id: string, name: string) => {
     const refs = countAssetRefs(id)
@@ -25,6 +45,37 @@ export default function Registry({ onEdit }: { onEdit: (m: ModalState) => void }
     }
     removeAsset(id)
   }
+
+  const delCategory = (id: string, name: string) => {
+    const refs = countCategoryRefs(id)
+    if (refs > 0) {
+      const ok = confirm(`'${name}'에 속한 고정지출 ${refs}건은 미분류로 바뀝니다. 계속?`)
+      if (!ok) return
+    }
+    removeCategory(id)
+  }
+
+  const fixedItem = (f: FixedExpense) => (
+    <div className="list-item" key={f.id}>
+      <div className="li-main">
+        <div>
+          {f.label} <span className="muted">· {assetName(f.assetId)}</span>
+        </div>
+        <div className="muted">
+          매월 {formatKRW(f.amount)} · {formatMonthKr(f.startMonth)}~
+          {f.endMonth ? formatMonthKr(f.endMonth) : '무기한'}
+        </div>
+      </div>
+      <div className="li-actions">
+        <button className="tiny ghost" onClick={() => onEdit({ type: 'fixed', editingId: f.id })}>
+          수정
+        </button>
+        <button className="tiny ghost danger" onClick={() => removeFixed(f.id)}>
+          삭제
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <div className="panel">
@@ -50,6 +101,44 @@ export default function Registry({ onEdit }: { onEdit: (m: ModalState) => void }
               수정
             </button>
             <button className="tiny ghost danger" onClick={() => delAsset(a.id, a.name)}>
+              삭제
+            </button>
+          </div>
+        </div>
+      ))}
+
+      <div className="section-label section-head">
+        <span className="muted">고정지출 카테고리</span>
+        <button className="tiny ghost" onClick={() => onEdit({ type: 'category' })}>
+          + 카테고리
+        </button>
+      </div>
+      {categories.length === 0 && (
+        <div className="empty">카테고리 없음 · 고정지출을 묶어서 볼 수 있습니다</div>
+      )}
+      {categories.map((c) => (
+        <div className="list-item" key={c.id}>
+          <div className="li-main">
+            <span className="cg-name">
+              <span className="dot" style={{ background: c.color }} />
+              {c.name}
+            </span>
+            <div className="muted">
+              고정지출 {countCategoryRefs(c.id)}건 ·{' '}
+              {formatKRW(
+                fixedExpenses.filter((f) => f.categoryId === c.id).reduce((s, f) => s + f.amount, 0),
+              )}
+              /월
+            </div>
+          </div>
+          <div className="li-actions">
+            <button
+              className="tiny ghost"
+              onClick={() => onEdit({ type: 'category', editingId: c.id })}
+            >
+              수정
+            </button>
+            <button className="tiny ghost danger" onClick={() => delCategory(c.id, c.name)}>
               삭제
             </button>
           </div>
@@ -85,27 +174,23 @@ export default function Registry({ onEdit }: { onEdit: (m: ModalState) => void }
         )
       })}
 
-      <div className="muted section-label">고정지출</div>
+      <div className="muted section-label">
+        고정지출
+        {fixedExpenses.length > 0 && ` · 월 합계 ${formatKRW(fixedTotal)}`}
+      </div>
       {fixedExpenses.length === 0 && <div className="empty">고정지출 없음</div>}
-      {fixedExpenses.map((f) => (
-        <div className="list-item" key={f.id}>
-          <div className="li-main">
-            <div>
-              {f.label} <span className="muted">· {assetName(f.assetId)}</span>
-            </div>
-            <div className="muted">
-              매월 {formatKRW(f.amount)} · {formatMonthKr(f.startMonth)}~
-              {f.endMonth ? formatMonthKr(f.endMonth) : '무기한'}
-            </div>
+      {groups.map((g) => (
+        <div className="cat-group" key={g.key || '__none'}>
+          <div className="cat-head">
+            <span className="cg-name">
+              <span className="dot" style={{ background: g.color ?? 'var(--border)' }} />
+              {g.name}
+            </span>
+            <span className="amt">
+              {formatKRW(g.items.reduce((s, f) => s + f.amount, 0))}/월
+            </span>
           </div>
-          <div className="li-actions">
-            <button className="tiny ghost" onClick={() => onEdit({ type: 'fixed', editingId: f.id })}>
-              수정
-            </button>
-            <button className="tiny ghost danger" onClick={() => removeFixed(f.id)}>
-              삭제
-            </button>
-          </div>
+          {g.items.map(fixedItem)}
         </div>
       ))}
     </div>

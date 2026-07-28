@@ -4,6 +4,7 @@ import { addMonths, currentMonth, monthDiff, monthLte } from './format'
 
 export type AssetLine = {
   label: string
+  category?: string // 고정지출 카테고리 이름
   installmentNo?: number // 할부면 회차, 고정지출이면 undefined
   months?: number
   principal: number
@@ -54,6 +55,7 @@ function sortKey(a: Asset): [number, number, string] {
 export function aggregate(data: AppData): MonthBucket[] {
   const months = computeHorizon(data)
   const assetById = new Map(data.assets.map((a) => [a.id, a]))
+  const categoryById = new Map(data.categories.map((c) => [c.id, c]))
 
   const table = new Map<string, Map<string, AssetLine[]>>()
   for (const m of months) table.set(m, new Map())
@@ -83,7 +85,13 @@ export function aggregate(data: AppData): MonthBucket[] {
       const afterStart = monthLte(fx.startMonth, m)
       const beforeEnd = !fx.endMonth || monthLte(m, fx.endMonth)
       if (afterStart && beforeEnd) {
-        push(m, fx.assetId, { label: fx.label, principal: fx.amount, fee: 0, amount: fx.amount })
+        push(m, fx.assetId, {
+          label: fx.label,
+          category: fx.categoryId ? categoryById.get(fx.categoryId)?.name : undefined,
+          principal: fx.amount,
+          fee: 0,
+          amount: fx.amount,
+        })
       }
     }
   }

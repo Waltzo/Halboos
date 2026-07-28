@@ -7,12 +7,13 @@ import AssetBadge from './AssetBadge'
 
 export default function MonthlySummary() {
   const assets = useStore((s) => s.assets)
+  const categories = useStore((s) => s.categories)
   const installments = useStore((s) => s.installments)
   const fixedExpenses = useStore((s) => s.fixedExpenses)
 
   const buckets = useMemo(
-    () => aggregate({ assets, installments, fixedExpenses }),
-    [assets, installments, fixedExpenses],
+    () => aggregate({ assets, categories, installments, fixedExpenses }),
+    [assets, categories, installments, fixedExpenses],
   )
 
   const [open, setOpen] = useState<string | null>(currentMonth())
@@ -83,6 +84,7 @@ function AssetGroupView({ g }: { g: AssetGroup }) {
       {g.lines.map((l, idx) => (
         <div className="line" key={idx}>
           <span className="lbl">
+            {l.category && <span className="cat-tag">{l.category}</span>}
             {l.label}
             {l.installmentNo != null && l.months != null && (
               <span className="fee">

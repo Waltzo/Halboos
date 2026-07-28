@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import AssetForm from './components/AssetForm'
+import CategoryForm from './components/CategoryForm'
 import InstallmentForm from './components/InstallmentForm'
 import FixedExpenseForm from './components/FixedExpenseForm'
 import Registry from './components/Registry'
@@ -8,11 +9,12 @@ import MatrixView from './components/MatrixView'
 import BackupBar from './components/BackupBar'
 import Modal from './components/Modal'
 
-export type ModalType = 'asset' | 'installment' | 'fixed' | 'registry'
+export type ModalType = 'asset' | 'category' | 'installment' | 'fixed' | 'registry'
 export type ModalState = { type: ModalType; editingId?: string }
 
 const TITLES: Record<ModalType, string> = {
   asset: '자산',
+  category: '카테고리',
   installment: '할부',
   fixed: '고정지출',
   registry: '등록 내역',
@@ -55,12 +57,13 @@ export default function App() {
 
       <div className="layout">
         <MonthlySummary />
-        <MatrixView />
+        <MatrixView onEdit={setModal} />
       </div>
 
       {modal && (
         <Modal title={title} onClose={close} wide={modal.type === 'registry'}>
           {modal.type === 'asset' && <AssetForm editingId={modal.editingId} onDone={close} />}
+          {modal.type === 'category' && <CategoryForm editingId={modal.editingId} onDone={close} />}
           {modal.type === 'installment' && (
             <InstallmentForm editingId={modal.editingId} onDone={close} />
           )}

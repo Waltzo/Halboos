@@ -4,12 +4,13 @@ import { exportJson, parseImport } from '../lib/backup'
 
 export default function BackupBar() {
   const assets = useStore((s) => s.assets)
+  const categories = useStore((s) => s.categories)
   const installments = useStore((s) => s.installments)
   const fixedExpenses = useStore((s) => s.fixedExpenses)
   const replaceAll = useStore((s) => s.replaceAll)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const onExport = () => exportJson({ assets, installments, fixedExpenses })
+  const onExport = () => exportJson({ assets, categories, installments, fixedExpenses })
 
   const onImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

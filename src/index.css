@@ -37,7 +37,13 @@ body {
 }
 
 .app {
-  max-width: 1100px;
+  /* 그래프에 40px 열 × 12개월이 정확히 들어가는 폭.
+     matrix-wrap 706px(= 고정열 226 + 12×40)
+     ← panel content 698 + margin 8
+     ← panel 732 + padding 32 + border 2
+     ← app content 1112 = 360(요약) + 20(gap) + 732
+     ← max-width 1144 + padding 32 */
+  max-width: 1144px;
   margin: 0 auto;
   padding: 20px 16px 64px;
 }
@@ -256,6 +262,39 @@ button.danger { color: var(--danger); }
 
 .section-label { margin: 14px 0 4px; }
 .section-label:first-of-type { margin-top: 4px; }
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* 고정지출 카테고리 묶음 */
+.cat-group { margin-top: 8px; }
+.cat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+.cat-head .dot { width: 8px; height: 8px; }
+.cat-head .amt { font-variant-numeric: tabular-nums; }
+.cat-group .list-item:first-child { border-top: none; }
+
+.cat-tag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 5px;
+  font-size: 10px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  vertical-align: middle;
+}
 
 /* color picker */
 .color-picker { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -330,9 +369,12 @@ button.danger { color: var(--danger); }
   border-collapse: separate;
   border-spacing: 0;
   font-size: 12px;
-  width: max-content;
+  /* 열 폭 고정 → 12개월이 기본으로 보이도록 표 전체 너비는 MatrixView에서 계산 */
+  table-layout: fixed;
   min-width: 100%;
 }
+.matrix col.c-label { width: 150px; }
+.matrix col.c-tot { width: 76px; }
 .matrix th, .matrix td {
   padding: 5px 8px;
   text-align: right;
@@ -349,15 +391,29 @@ button.danger { color: var(--danger); }
   left: 0;
   z-index: 1;
   text-align: left;
-  max-width: 160px;
+  max-width: 150px;
   font-weight: 500;
 }
 .matrix .rowlabel .rl-text {
   display: inline-block;
   vertical-align: middle;
-  max-width: 100px;
+  max-width: 84px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.matrix .rowlabel .rl-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+}
+.matrix .rowlabel .rl-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
 }
 .matrix .rowlabel .rl-kind {
   margin-right: 6px;
@@ -371,9 +427,16 @@ button.danger { color: var(--danger); }
 .matrix tr.group-sep th, .matrix tr.group-sep td {
   border-top: 2px solid var(--muted);
 }
-.matrix .cell { font-variant-numeric: tabular-nums; color: var(--text); }
+.matrix .cell {
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .matrix .cell.merged { text-align: left; font-weight: 600; }
 .matrix .mcol { text-align: right; font-variant-numeric: tabular-nums; }
+/* 월 열은 좁으므로 좌우 여백 축소 */
+.matrix .cell, .matrix .mcol { padding-left: 4px; padding-right: 5px; }
 .matrix .rowtot {
   font-weight: 700;
   border-left: 1px solid var(--border);
@@ -384,5 +447,17 @@ button.danger { color: var(--danger); }
 }
 .matrix thead .rowtot { top: 0; z-index: 3; }
 .matrix tfoot .rowtot { background: var(--panel-2); }
-.matrix tfoot td, .matrix tfoot th { font-weight: 700; border-top: 2px solid var(--border); background: var(--panel-2); }
+.matrix tfoot td, .matrix tfoot th { font-weight: 700; background: var(--panel-2); }
+.matrix tfoot tr:first-child td, .matrix tfoot tr:first-child th { border-top: 2px solid var(--border); }
 .matrix tfoot .rowlabel { background: var(--panel-2); }
+.matrix tfoot tr.subtotal-row td, .matrix tfoot tr.subtotal-row th {
+  font-weight: 600;
+  color: var(--muted);
+}
+/* 카테고리별 합계: 고정지출 합계 아래 단계로 들여쓰기 */
+.matrix tfoot tr.cattotal-row td, .matrix tfoot tr.cattotal-row th {
+  font-weight: 500;
+  color: var(--muted);
+}
+.matrix tfoot tr.cattotal-row .rowlabel { padding-left: 18px; }
+.matrix tfoot tr.cattotal-row .dot { display: inline-block; vertical-align: middle; margin-right: 6px; }

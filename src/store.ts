@@ -1,12 +1,16 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { AppData, Asset, FixedExpense, Installment } from './types'
+import type { AppData, Asset, Category, FixedExpense, Installment } from './types'
 import { uid } from './lib/format'
 
 type State = AppData & {
   addAsset: (a: Omit<Asset, 'id'>) => void
   updateAsset: (id: string, patch: Partial<Omit<Asset, 'id'>>) => void
   removeAsset: (id: string) => void
+
+  addCategory: (c: Omit<Category, 'id'>) => string
+  updateCategory: (id: string, patch: Partial<Omit<Category, 'id'>>) => void
+  removeCategory: (id: string) => void
 
   addInstallment: (i: Omit<Installment, 'id'>) => void
   updateInstallment: (id: string, patch: Partial<Omit<Installment, 'id'>>) => void
@@ -34,6 +38,7 @@ export const useStore = create<State>()(
   persist(
     (set) => ({
       assets: [],
+      categories: [],
       installments: [],
       fixedExpenses: [],
 
@@ -53,6 +58,31 @@ export const useStore = create<State>()(
           fixedExpenses: s.fixedExpenses.filter((f) => f.assetId !== id),
         })),
 
+      addCategory: (c) => {
+        const id = uid()
+        set((s) => ({
+          categories: [
+            ...s.categories,
+            {
+              ...c,
+              id,
+              color: c.color || DEFAULT_COLORS[s.categories.length % DEFAULT_COLORS.length],
+            },
+          ],
+        }))
+        return id
+      },
+      updateCategory: (id, patch) =>
+        set((s) => ({ categories: s.categories.map((c) => (c.id === id ? { ...c, ...patch } : c)) })),
+      // 카테고리 삭제 시 고정지출은 유지하고 미분류로 되돌림
+      removeCategory: (id) =>
+        set((s) => ({
+          categories: s.categories.filter((c) => c.id !== id),
+          fixedExpenses: s.fixedExpenses.map((f) =>
+            f.categoryId === id ? { ...f, categoryId: undefined } : f,
+          ),
+        })),
+
       addInstallment: (i) => set((s) => ({ installments: [...s.installments, { ...i, id: uid() }] })),
       updateInstallment: (id, patch) =>
         set((s) => ({
@@ -70,16 +100,18 @@ export const useStore = create<State>()(
       replaceAll: (data) =>
         set(() => ({
           assets: data.assets ?? [],
+          categories: data.categories ?? [],
           installments: data.installments ?? [],
           fixedExpenses: data.fixedExpenses ?? [],
         })),
     }),
     {
       name: 'halboos-data',
-      version: 2,
-      // v1(cards + cardId) → v2(assets + assetId) 마이그레이션
+      version: 3,
+      // v1(cards + cardId) → v2(assets + assetId) → v3(categories) 마이그레이션
       migrate: (persisted: unknown, version: number) => {
         const s = (persisted ?? {}) as Record<string, unknown>
+        if (version < 3 && !Array.isArray(s.categories)) s.categories = []
         if (version < 2) {
           const cards = Array.isArray(s.cards) ? (s.cards as Record<string, unknown>[]) : []
           s.assets = cards.map((c) => ({ ...c, kind: 'card' }))
@@ -109,4 +141,8 @@ export function countAssetRefs(assetId: string): { installments: number; fixed: 
     installments: s.installments.filter((i) => i.assetId === assetId).length,
     fixed: s.fixedExpenses.filter((f) => f.assetId === assetId).length,
   }
+}
+
+export function countCategoryRefs(categoryId: string): number {
+  return useStore.getState().fixedExpenses.filter((f) => f.categoryId === categoryId).length
 }
