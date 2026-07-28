@@ -109,11 +109,13 @@ export default function MatrixView({ onEdit }: { onEdit: (m: ModalState) => void
           <tbody>
             {m.rows.map((row, ri) => {
               const prev = ri > 0 ? m.rows[ri - 1] : undefined
-              // 할부→고정 경계, 그리고 고정지출 카테고리가 바뀌는 지점에 구분선
-              const sep =
+              // 할부→고정 경계는 진한 선, 고정지출 안의 카테고리 경계는 옅은 선
+              const kindSep = !!prev && prev.kind !== row.kind
+              const catSep =
                 !!prev &&
-                (prev.kind !== row.kind ||
-                  (row.kind === 'fixed' && (prev.category?.id ?? '') !== (row.category?.id ?? '')))
+                !kindSep &&
+                row.kind === 'fixed' &&
+                (prev.category?.id ?? '') !== (row.category?.id ?? '')
               const bgFor = (v: number) => {
                 const ratio = m.max > 0 ? v / m.max : 0
                 return v > 0 && row.asset ? hexToRgba(row.asset.color, 0.15 + 0.75 * ratio) : 'transparent'
@@ -135,27 +137,30 @@ export default function MatrixView({ onEdit }: { onEdit: (m: ModalState) => void
                   editingId: row.id,
                 })
               return (
-                <tr key={row.id} className={sep ? 'group-sep' : ''}>
+                <tr key={row.id} className={kindSep ? 'group-sep' : catSep ? 'cat-sep' : ''}>
                   <th className="rowlabel">
-                    <AssetBadge asset={row.asset} />
-                    <span
-                      className="rl-kind"
-                      style={
-                        row.category
-                          ? { color: row.category.color, borderColor: row.category.color }
-                          : undefined
-                      }
-                    >
-                      {kindLabel}
+                    <span className="rl-inner">
+                      <AssetBadge asset={row.asset} />
+                      <span
+                        className="rl-kind"
+                        title={kindLabel}
+                        style={
+                          row.category
+                            ? { color: row.category.color, borderColor: row.category.color }
+                            : undefined
+                        }
+                      >
+                        {kindLabel}
+                      </span>
+                      <button
+                        type="button"
+                        className="rl-text rl-link"
+                        onClick={edit}
+                        title={`${row.label} 수정`}
+                      >
+                        {row.label}
+                      </button>
                     </span>
-                    <button
-                      type="button"
-                      className="rl-text rl-link"
-                      onClick={edit}
-                      title={`${row.label} 수정`}
-                    >
-                      {row.label}
-                    </button>
                   </th>
                   {merge
                     ? row.cells.map((v, i) => {
@@ -193,11 +198,12 @@ export default function MatrixView({ onEdit }: { onEdit: (m: ModalState) => void
           </tbody>
           <tfoot>
             {hasInst && <TotalRow label="할부 합계" cells={m.instTotals} kind="sub" />}
+            {hasFixed && <TotalRow label="고정지출 합계" cells={m.fixedTotals} kind="sub" />}
+            {/* 카테고리별 내역은 고정지출 합계의 하위 항목 */}
             {m.categoryTotals.length > 1 &&
               m.categoryTotals.map((c) => (
                 <TotalRow key={c.key || '__none'} label={c.name} cells={c.cells} kind="cat" color={c.color} />
               ))}
-            {hasFixed && <TotalRow label="고정지출 합계" cells={m.fixedTotals} kind="sub" />}
             <TotalRow label="월 합계" cells={m.colTotals} kind="total" />
           </tfoot>
         </table>

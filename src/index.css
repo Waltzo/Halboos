@@ -393,12 +393,21 @@ button.danger { color: var(--danger); }
   text-align: left;
   max-width: 150px;
   font-weight: 500;
+  /* 열 너비를 넘는 라벨은 잘라냄 (tfoot 합계 라벨 포함) */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 뱃지·카테고리 태그는 고정, 남는 폭을 내역 이름이 차지하고 넘치면 ... */
+.matrix .rowlabel .rl-inner {
+  display: flex;
+  align-items: center;
+  min-width: 0;
 }
 .matrix .rowlabel .rl-text {
-  display: inline-block;
-  vertical-align: middle;
-  max-width: 84px;
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
+  white-space: nowrap;
   text-overflow: ellipsis;
 }
 .matrix .rowlabel .rl-link {
@@ -416,16 +425,25 @@ button.danger { color: var(--danger); }
   text-decoration: underline;
 }
 .matrix .rowlabel .rl-kind {
+  flex: 0 0 auto;
+  max-width: 64px;
   margin-right: 6px;
   font-size: 10px;
   color: var(--muted);
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 0 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .matrix .rowlabel .dot { display: inline-block; vertical-align: middle; margin-right: 6px; }
 .matrix tr.group-sep th, .matrix tr.group-sep td {
   border-top: 2px solid var(--muted);
+}
+/* 고정지출 안 카테고리 경계 — 그룹 구분선보다 옅게 */
+.matrix tr.cat-sep th, .matrix tr.cat-sep td {
+  border-top: 1px solid var(--border);
 }
 .matrix .cell {
   font-variant-numeric: tabular-nums;
