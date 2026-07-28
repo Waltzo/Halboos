@@ -43,7 +43,7 @@ body {
      ← panel 732 + padding 32 + border 2
      ← app content 1112 = 360(요약) + 20(gap) + 732
      ← max-width 1144 + padding 32 */
-  max-width: 1144px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 20px 16px 64px;
 }

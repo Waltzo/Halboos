@@ -8,9 +8,9 @@ import type { ModalState } from '../App'
 // 스크롤 없이 기본으로 보이는 월 수
 const VISIBLE_MONTHS = 12
 // 좌측 내역 열 + 우측 합계 열 고정 폭 합 (index.css의 col 폭과 일치)
-const FIXED_COLS_W = '226px'
+const FIXED_COLS_W = '225px'
 // 월 열 최소 폭 — 12개월이 항상 들어가도록 좁게 잡음 (모바일에서만 스크롤)
-const MIN_MONTH_W = 40
+const MIN_MONTH_W = 43
 
 // 그래프용 축약 표기 (만 단위) — 좁은 열에 들어가도록 100만 이상은 소수점 생략
 function short(n: number): string {
