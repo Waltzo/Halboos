@@ -1,4 +1,9 @@
-import { useStore, countAssetRefs, countCategoryRefs } from '../store'
+import {
+  useStore,
+  countCategoryRefs,
+  confirmRemoveAsset,
+  confirmRemoveCategory,
+} from '../store'
 import AssetBadge from './AssetBadge'
 import { formatKRW, formatMonthKr } from '../lib/format'
 import { lastBillingMonth, totalFee } from '../lib/installment'
@@ -10,8 +15,6 @@ export default function Registry({ onEdit }: { onEdit: (m: ModalState) => void }
   const categories = useStore((s) => s.categories)
   const installments = useStore((s) => s.installments)
   const fixedExpenses = useStore((s) => s.fixedExpenses)
-  const removeAsset = useStore((s) => s.removeAsset)
-  const removeCategory = useStore((s) => s.removeCategory)
   const removeInstallment = useStore((s) => s.removeInstallment)
   const removeFixed = useStore((s) => s.removeFixedExpense)
 
@@ -33,27 +36,6 @@ export default function Registry({ onEdit }: { onEdit: (m: ModalState) => void }
       items: fixedExpenses.filter((f) => !f.categoryId || !known.has(f.categoryId)),
     },
   ].filter((g) => g.items.length > 0)
-
-  const delAsset = (id: string, name: string) => {
-    const refs = countAssetRefs(id)
-    const total = refs.installments + refs.fixed
-    if (total > 0) {
-      const ok = confirm(
-        `'${name}'에 연결된 할부 ${refs.installments}건, 고정지출 ${refs.fixed}건도 함께 삭제됩니다. 계속?`,
-      )
-      if (!ok) return
-    }
-    removeAsset(id)
-  }
-
-  const delCategory = (id: string, name: string) => {
-    const refs = countCategoryRefs(id)
-    if (refs > 0) {
-      const ok = confirm(`'${name}'에 속한 고정지출 ${refs}건은 미분류로 바뀝니다. 계속?`)
-      if (!ok) return
-    }
-    removeCategory(id)
-  }
 
   const fixedItem = (f: FixedExpense) => (
     <div className="list-item" key={f.id}>
@@ -100,7 +82,7 @@ export default function Registry({ onEdit }: { onEdit: (m: ModalState) => void }
             <button className="tiny ghost" onClick={() => onEdit({ type: 'asset', editingId: a.id })}>
               수정
             </button>
-            <button className="tiny ghost danger" onClick={() => delAsset(a.id, a.name)}>
+            <button className="tiny ghost danger" onClick={() => confirmRemoveAsset(a.id, a.name)}>
               삭제
             </button>
           </div>
@@ -138,7 +120,10 @@ export default function Registry({ onEdit }: { onEdit: (m: ModalState) => void }
             >
               수정
             </button>
-            <button className="tiny ghost danger" onClick={() => delCategory(c.id, c.name)}>
+            <button
+              className="tiny ghost danger"
+              onClick={() => confirmRemoveCategory(c.id, c.name)}
+            >
               삭제
             </button>
           </div>

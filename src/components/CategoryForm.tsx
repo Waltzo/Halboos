@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useStore, DEFAULT_COLORS } from '../store'
+import { useStore, DEFAULT_COLORS, confirmRemoveCategory } from '../store'
 import ColorPicker from './ColorPicker'
 
 export default function CategoryForm({
@@ -27,6 +27,11 @@ export default function CategoryForm({
     onDone()
   }
 
+  const remove = () => {
+    if (!editing) return
+    if (confirmRemoveCategory(editing.id, editing.name)) onDone()
+  }
+
   return (
     <form onSubmit={submit}>
       <label className="field">
@@ -44,9 +49,16 @@ export default function CategoryForm({
         <ColorPicker value={color} onChange={setColor} />
       </label>
 
-      <button type="submit" className="primary" style={{ width: '100%' }}>
-        {editing ? '저장' : '추가'}
-      </button>
+      <div className="form-actions">
+        {editing && (
+          <button type="button" className="ghost danger" onClick={remove}>
+            삭제
+          </button>
+        )}
+        <button type="submit" className="primary submit">
+          {editing ? '저장' : '추가'}
+        </button>
+      </div>
     </form>
   )
 }

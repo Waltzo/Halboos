@@ -17,6 +17,7 @@ export default function FixedExpenseForm({
   const fixedExpenses = useStore((s) => s.fixedExpenses)
   const add = useStore((s) => s.addFixedExpense)
   const update = useStore((s) => s.updateFixedExpense)
+  const remove = useStore((s) => s.removeFixedExpense)
   const addCategory = useStore((s) => s.addCategory)
   const editing = editingId ? fixedExpenses.find((f) => f.id === editingId) : undefined
 
@@ -54,6 +55,13 @@ export default function FixedExpenseForm({
     }
     if (editing) update(editing.id, data)
     else add(data)
+    onDone()
+  }
+
+  const del = () => {
+    if (!editing) return
+    if (!confirm(`'${editing.label}' 고정지출을 삭제할까요?`)) return
+    remove(editing.id)
     onDone()
   }
 
@@ -138,9 +146,16 @@ export default function FixedExpenseForm({
         </label>
       </div>
 
-      <button type="submit" className="primary" style={{ width: '100%' }}>
-        {editing ? '저장' : '추가'}
-      </button>
+      <div className="form-actions">
+        {editing && (
+          <button type="button" className="ghost danger" onClick={del}>
+            삭제
+          </button>
+        )}
+        <button type="submit" className="primary submit">
+          {editing ? '저장' : '추가'}
+        </button>
+      </div>
     </form>
   )
 }

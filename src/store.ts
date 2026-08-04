@@ -146,3 +146,30 @@ export function countAssetRefs(assetId: string): { installments: number; fixed: 
 export function countCategoryRefs(categoryId: string): number {
   return useStore.getState().fixedExpenses.filter((f) => f.categoryId === categoryId).length
 }
+
+// 연결된 항목을 안내하고 확인을 받은 뒤 삭제. 삭제했으면 true
+export function confirmRemoveAsset(id: string, name: string): boolean {
+  const refs = countAssetRefs(id)
+  if (refs.installments + refs.fixed > 0) {
+    const ok = confirm(
+      `'${name}'에 연결된 할부 ${refs.installments}건, 고정지출 ${refs.fixed}건도 함께 삭제됩니다. 계속?`,
+    )
+    if (!ok) return false
+  } else if (!confirm(`'${name}' 자산을 삭제할까요?`)) {
+    return false
+  }
+  useStore.getState().removeAsset(id)
+  return true
+}
+
+export function confirmRemoveCategory(id: string, name: string): boolean {
+  const refs = countCategoryRefs(id)
+  if (refs > 0) {
+    const ok = confirm(`'${name}'에 속한 고정지출 ${refs}건은 미분류로 바뀝니다. 계속?`)
+    if (!ok) return false
+  } else if (!confirm(`'${name}' 카테고리를 삭제할까요?`)) {
+    return false
+  }
+  useStore.getState().removeCategory(id)
+  return true
+}

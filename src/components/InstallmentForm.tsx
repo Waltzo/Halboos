@@ -14,6 +14,7 @@ export default function InstallmentForm({
   const installments = useStore((s) => s.installments)
   const add = useStore((s) => s.addInstallment)
   const update = useStore((s) => s.updateInstallment)
+  const remove = useStore((s) => s.removeInstallment)
   const editing = editingId ? installments.find((i) => i.id === editingId) : undefined
 
   const cards = assets.filter((a) => a.kind === 'card')
@@ -48,6 +49,13 @@ export default function InstallmentForm({
     }
     if (editing) update(editing.id, data)
     else add(data)
+    onDone()
+  }
+
+  const del = () => {
+    if (!editing) return
+    if (!confirm(`'${editing.label}' 할부를 삭제할까요?`)) return
+    remove(editing.id)
     onDone()
   }
 
@@ -117,9 +125,16 @@ export default function InstallmentForm({
         <input type="month" value={firstBillingMonth} onChange={(e) => setFirstBillingMonth(e.target.value)} />
       </label>
 
-      <button type="submit" className="primary" style={{ width: '100%' }}>
-        {editing ? '저장' : '추가'}
-      </button>
+      <div className="form-actions">
+        {editing && (
+          <button type="button" className="ghost danger" onClick={del}>
+            삭제
+          </button>
+        )}
+        <button type="submit" className="primary submit">
+          {editing ? '저장' : '추가'}
+        </button>
+      </div>
     </form>
   )
 }

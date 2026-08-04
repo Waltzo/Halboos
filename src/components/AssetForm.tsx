@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useStore, DEFAULT_COLORS } from '../store'
+import { useStore, DEFAULT_COLORS, confirmRemoveAsset } from '../store'
 import type { AssetKind } from '../types'
 import ColorPicker from './ColorPicker'
 
@@ -37,6 +37,11 @@ export default function AssetForm({
     if (editing) updateAsset(editing.id, base)
     else addAsset(base)
     onDone()
+  }
+
+  const remove = () => {
+    if (!editing) return
+    if (confirmRemoveAsset(editing.id, editing.name)) onDone()
   }
 
   return (
@@ -97,9 +102,16 @@ export default function AssetForm({
         <ColorPicker value={color} onChange={setColor} />
       </label>
 
-      <button type="submit" className="primary" style={{ width: '100%' }}>
-        {editing ? '저장' : '추가'}
-      </button>
+      <div className="form-actions">
+        {editing && (
+          <button type="button" className="ghost danger" onClick={remove}>
+            삭제
+          </button>
+        )}
+        <button type="submit" className="primary submit">
+          {editing ? '저장' : '추가'}
+        </button>
+      </div>
     </form>
   )
 }
