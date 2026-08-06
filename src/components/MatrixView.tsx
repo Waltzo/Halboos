@@ -70,9 +70,11 @@ export default function MatrixView({ onEdit }: { onEdit: (m: ModalState) => void
 
   if (m.rows.length === 0) {
     return (
-      <div className="panel">
-        <h2>📊 내역별 월간 그래프</h2>
-        <div className="empty">할부·고정지출을 등록하면 내역별 월간 분포가 표시됩니다.</div>
+      <div>
+        <h2 className="section-title">📊 내역별 월간 그래프</h2>
+        <div className="panel">
+          <div className="empty">할부·고정지출을 등록하면 내역별 월간 분포가 표시됩니다.</div>
+        </div>
       </div>
     )
   }
@@ -84,8 +86,9 @@ export default function MatrixView({ onEdit }: { onEdit: (m: ModalState) => void
   const tableWidth = `max(100%, calc(${FIXED_COLS_W} + (100% - ${FIXED_COLS_W}) * ${m.months.length} / ${VISIBLE_MONTHS}), calc(${FIXED_COLS_W} + ${m.months.length} * ${MIN_MONTH_W}px))`
 
   return (
-    <div className="panel">
-      <h2>📊 내역별 월간 그래프</h2>
+    <div>
+      <h2 className="section-title">📊 내역별 월간 그래프</h2>
+      <div className="panel">
       <div className="matrix-wrap">
         <table className="matrix" style={{ width: tableWidth }}>
           <colgroup>
@@ -210,6 +213,7 @@ export default function MatrixView({ onEdit }: { onEdit: (m: ModalState) => void
       </div>
       <div className="muted" style={{ marginTop: 8 }}>
         색이 진할수록 큰 금액 · 금액에 마우스를 올리면 정확한 금액 표시 · 내역 이름을 클릭하면 수정
+      </div>
       </div>
     </div>
   )

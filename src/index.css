@@ -1,31 +1,59 @@
+/* 뉴모피즘: 배경과 표면이 같은 색이고, 밝은/어두운 이중 그림자로 요철을 만든다.
+   --shadow* = 돌출(raised), --shadow-in* = 함몰(inset, 입력·트랙·비활성 영역) */
 :root {
-  --bg: #f5f6f8;
-  --panel: #ffffff;
-  --panel-2: #f0f2f5;
-  --text: #1a1d21;
-  --muted: #6b7280;
-  --border: #e2e5ea;
+  --bg: #e9ecf1;
+  --panel: #e9ecf1;
+  --panel-2: #e3e6ec;
+  --text: #1f2429;
+  --muted: #79818d;
+  --border: #d7dbe3;
   --accent: #4f7cff;
   --danger: #e5484d;
   --ok: #22b573;
-  --radius: 12px;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --radius: 16px;
+
+  --sh-dark: #c5cad4;
+  --sh-light: #ffffff;
+
+  --shadow: 7px 7px 14px var(--sh-dark), -7px -7px 14px var(--sh-light);
+  --shadow-sm: 3px 3px 6px var(--sh-dark), -3px -3px 6px var(--sh-light);
+  --shadow-in: inset 5px 5px 10px var(--sh-dark), inset -5px -5px 10px var(--sh-light);
+  --shadow-in-sm: inset 2px 2px 4px var(--sh-dark), inset -2px -2px 4px var(--sh-light);
+
   color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #14171c;
-    --panel: #1c2027;
-    --panel-2: #23282f;
+    --bg: #24282f;
+    --panel: #24282f;
+    --panel-2: #1f232a;
     --text: #e8eaed;
-    --muted: #9aa2ac;
-    --border: #2c323b;
-    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --muted: #98a0ab;
+    --border: #2e343d;
+
+    --sh-dark: #15181d;
+    --sh-light: #2f353e;
   }
 }
 
 * { box-sizing: border-box; }
+
+/* 스크롤바 — 기본 위젯이 튀어 보이므로 배경에 묻는 얇은 막대로.
+   투명 테두리 + background-clip으로 어떤 배경 위에서도 자연스럽게 뜬다. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sh-dark) transparent;
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--sh-dark);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--muted); background-clip: padding-box; }
 
 body {
   margin: 0;
@@ -81,7 +109,8 @@ header.top .sub { color: var(--muted); font-size: 13px; }
 
 .panel {
   background: var(--panel);
-  border: 1px solid var(--border);
+  /* 투명 테두리로 기존 박스 폭(테두리 2px 포함)을 그대로 유지 */
+  border: 1px solid transparent;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 16px;
@@ -91,6 +120,15 @@ header.top .sub { color: var(--muted); font-size: 13px; }
 .panel h2 {
   font-size: 15px;
   margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 패널 바깥에 두는 섹션 제목 (월별 결제 예정 / 내역별 월간 그래프 공통) */
+.section-title {
+  font-size: 16px;
+  margin: 4px 4px 12px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -108,35 +146,55 @@ label.field > span { display: block; margin-bottom: 4px; }
 input, select {
   width: 100%;
   padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--panel-2);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: var(--shadow-in-sm);
   color: var(--text);
   font-size: 14px;
 }
 
-input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+input:focus, select:focus {
+  outline: none;
+  box-shadow: var(--shadow-in-sm), 0 0 0 2px var(--accent);
+}
 
 .row { display: flex; gap: 8px; }
 .row > * { flex: 1; }
 
 button {
   cursor: pointer;
-  border: 1px solid var(--border);
-  background: var(--panel-2);
+  border: 1px solid transparent;
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
   color: var(--text);
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 14px;
   font-weight: 500;
+  transition: box-shadow 0.15s ease, color 0.15s ease;
 }
-button:hover { border-color: var(--accent); }
-button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-button.primary:hover { filter: brightness(1.05); }
-button.ghost { background: transparent; }
-button.tiny { padding: 4px 8px; font-size: 12px; }
+button:hover { color: var(--accent); }
+/* 누르면 눌린 것처럼 함몰 */
+button:active { box-shadow: var(--shadow-in-sm); }
+button:focus-visible { outline: none; box-shadow: var(--shadow-sm), 0 0 0 2px var(--accent); }
+
+button.primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+button.primary:hover { color: #fff; filter: brightness(1.06); }
+button.primary:active { filter: none; box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.35); }
+
+/* ghost = 평평하게 배경에 묻어 있다가 hover 시 떠오름 */
+button.ghost { background: transparent; box-shadow: none; color: var(--muted); }
+button.ghost:hover { background: var(--panel); box-shadow: var(--shadow-sm); color: var(--accent); }
+button.ghost:active { background: var(--panel); box-shadow: var(--shadow-in-sm); }
+
+button.tiny { padding: 4px 8px; font-size: 12px; border-radius: 8px; }
 button.danger { color: var(--danger); }
-button.danger:hover { border-color: var(--danger); }
+button.danger:hover { color: var(--danger); }
 
 /* 모달 폼 하단: (삭제) + 저장 */
 .form-actions { display: flex; gap: 8px; }
@@ -149,12 +207,14 @@ button.danger:hover { border-color: var(--danger); }
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 12px;
-  background: var(--panel-2);
+  background: var(--panel);
+  box-shadow: var(--shadow-in-sm);
 }
 
 .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
 
 .asset-badge {
+  box-shadow: var(--shadow-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -182,16 +242,13 @@ button.danger:hover { border-color: var(--danger); }
 .muted { color: var(--muted); font-size: 12px; }
 .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
 
-/* Monthly summary */
-.month-scroll {
-  max-height: calc(100vh - 160px);
-  overflow-y: auto;
-  padding-right: 4px;
-  margin-right: -4px;
-}
+/* Monthly summary — 가까운 6개월만 보여주므로 스크롤 없음.
+   패딩=음수마진이라 콘텐츠 폭은 그대로면서 카드 그림자가 잘리지 않는다. */
+.month-list { padding: 8px; margin: -8px; }
+.more-months { padding: 12px 4px 0; text-align: center; }
 .month-card {
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   margin-bottom: 12px;
@@ -207,17 +264,23 @@ button.danger:hover { border-color: var(--danger); }
   user-select: none;
 }
 .month-head:hover { background: var(--panel-2); }
+.month-head:hover .mtitle { color: var(--accent); }
 .month-head .mtitle { font-weight: 600; }
 .month-head .mtotal { font-weight: 700; font-size: 16px; }
 
 .bar-track {
   height: 6px;
-  background: var(--panel-2);
+  background: var(--panel);
+  box-shadow: var(--shadow-in-sm);
   border-radius: 999px;
-  overflow: hidden;
   margin: 0 16px 12px;
 }
-.bar-fill { height: 100%; background: var(--accent); border-radius: 999px; }
+.bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  box-shadow: 0 0 6px rgba(79, 124, 255, 0.5);
+}
 
 .month-body { padding: 0 16px 12px; border-top: 1px solid var(--border); }
 
@@ -249,7 +312,11 @@ button.danger:hover { border-color: var(--danger); }
 
 .pill-toggle { display: flex; gap: 6px; }
 .pill-toggle button { flex: 1; }
-.pill-toggle button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pill-toggle button.on {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.3);
+}
 
 /* toolbar */
 .toolbar { align-items: center; }
@@ -274,14 +341,15 @@ button.danger:hover { border-color: var(--danger); }
   gap: 8px;
 }
 
-/* 등록 내역 탭 */
+/* 등록 내역 탭 — 함몰된 트랙 위에 선택 탭만 돌출 */
 .tabs {
   display: flex;
   gap: 4px;
-  padding: 3px;
-  margin-bottom: 4px;
-  background: var(--panel-2);
-  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow-in-sm);
+  border-radius: 12px;
 }
 .tabs .tab {
   flex: 1;
@@ -290,35 +358,40 @@ button.danger:hover { border-color: var(--danger); }
   font-weight: 600;
   color: var(--muted);
   background: transparent;
-  border: none;
-  border-radius: 8px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  box-shadow: none;
   cursor: pointer;
 }
 .tabs .tab:hover { color: var(--text); }
-.tabs .tab.on {
-  color: var(--text);
+.tabs .tab.on, .tabs .tab.on:hover {
+  color: var(--accent);
   background: var(--panel);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-sm);
 }
+.tabs .tab.on:active { box-shadow: var(--shadow-sm); }
 
 /* 종료된 할부 / 고정지출 */
+/* 종료 항목 = 함몰된 홈에 가라앉은 느낌 */
 .list-item.ended {
   padding: 8px;
-  margin: 0 -8px;
-  border-radius: 8px;
+  margin: 4px -8px;
+  border-top: none;
+  border-radius: 12px;
   background: var(--panel-2);
+  box-shadow: var(--shadow-in-sm);
   color: var(--muted);
 }
 .list-item.ended .li-main > div:first-child { color: var(--muted); }
 .end-tag {
   display: inline-block;
   margin-left: 6px;
-  padding: 0 5px;
+  padding: 0 6px;
   font-size: 10px;
   line-height: 16px;
   color: var(--muted);
   background: var(--panel);
-  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
   border-radius: 999px;
   vertical-align: middle;
 }
@@ -335,14 +408,15 @@ button.danger:hover { border-color: var(--danger); }
   font-size: 14px;
   line-height: 1;
   color: var(--muted);
-  background: none;
-  border: none;
-  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  box-shadow: none;
   cursor: grab;
   touch-action: none;
 }
-.drag-handle:hover { color: var(--text); background: var(--panel-2); }
-.drag-handle:active { cursor: grabbing; }
+.drag-handle:hover { color: var(--accent); background: var(--panel); box-shadow: var(--shadow-sm); }
+.drag-handle:active { cursor: grabbing; box-shadow: var(--shadow-in-sm); }
 
 /* 고정지출 카테고리 묶음 */
 .cat-group { margin-top: 8px; }
@@ -366,8 +440,10 @@ button.danger:hover { border-color: var(--danger); }
   padding: 0 5px;
   font-size: 10px;
   color: var(--muted);
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  border: 1px solid transparent;
+  background: var(--panel);
+  box-shadow: var(--shadow-in-sm);
+  border-radius: 6px;
   vertical-align: middle;
 }
 
@@ -377,13 +453,15 @@ button.danger:hover { border-color: var(--danger); }
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 2px solid var(--border);
+  border: 2px solid transparent;
   padding: 0;
   cursor: pointer;
   position: relative;
+  box-shadow: var(--shadow-sm);
 }
-.swatch.on {
-  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent);
+.swatch:active { box-shadow: var(--shadow-sm); }
+.swatch.on, .swatch.on:active {
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent), var(--shadow-sm);
 }
 .swatch.custom {
   display: inline-flex;
@@ -391,6 +469,9 @@ button.danger:hover { border-color: var(--danger); }
   justify-content: center;
   font-size: 13px;
   border-style: dashed;
+  border-color: var(--border);
+  background: var(--panel);
+  color: var(--muted);
   overflow: hidden;
 }
 .swatch.custom input[type='color'] {
@@ -408,7 +489,8 @@ button.danger:hover { border-color: var(--danger); }
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(20, 24, 30, 0.35);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -418,9 +500,10 @@ button.danger:hover { border-color: var(--danger); }
 }
 .modal {
   background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  border: 1px solid transparent;
+  border-radius: 20px;
+  box-shadow: 10px 10px 24px rgba(0, 0, 0, 0.25), -8px -8px 20px var(--sh-light),
+    0 16px 48px rgba(0, 0, 0, 0.22);
   width: 100%;
   max-width: 440px;
 }
@@ -513,6 +596,19 @@ button.danger:hover { border-color: var(--danger); }
   text-overflow: ellipsis;
 }
 .matrix .rowlabel .dot { display: inline-block; vertical-align: middle; margin-right: 6px; }
+/* 내역명 열은 평평하게 — 전역 button 뉴모피즘 음영까지 모두 제거
+   (.rl-link는 button 요소라 --shadow-sm / :active 함몰을 상속받는다) */
+.matrix .rowlabel .asset-badge { box-shadow: none; }
+.matrix .rowlabel .rl-kind { background: transparent; box-shadow: none; }
+.matrix .rowlabel .rl-link,
+.matrix .rowlabel .rl-link:hover,
+.matrix .rowlabel .rl-link:active,
+.matrix .rowlabel .rl-link:focus-visible {
+  box-shadow: none;
+  background: none;
+}
+/* 음영을 뺀 대신 키보드 포커스는 외곽선으로 */
+.matrix .rowlabel .rl-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .matrix tr.group-sep th, .matrix tr.group-sep td {
   border-top: 2px solid var(--muted);
 }

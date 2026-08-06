@@ -5,6 +5,8 @@ import { formatKRW, formatMonthKr, currentMonth } from '../lib/format'
 import type { AssetGroup } from '../lib/aggregate'
 import AssetBadge from './AssetBadge'
 
+const VISIBLE_MONTHS = 6
+
 export default function MonthlySummary() {
   const assets = useStore((s) => s.assets)
   const categories = useStore((s) => s.categories)
@@ -18,23 +20,28 @@ export default function MonthlySummary() {
 
   const [open, setOpen] = useState<string | null>(currentMonth())
 
-  const maxTotal = Math.max(1, ...buckets.map((b) => b.total))
+  // 사이드 요약은 가까운 6개월만. 그 이후는 우측 매트릭스에서 확인.
+  const shown = buckets.slice(0, VISIBLE_MONTHS)
+  const hiddenCount = buckets.length - shown.length
+  const maxTotal = Math.max(1, ...shown.map((b) => b.total))
   const hasData = installments.length > 0 || fixedExpenses.length > 0
 
   if (!hasData) {
     return (
-      <div className="panel">
-        <h2>📅 월별 결제 예정</h2>
-        <div className="empty">할부나 고정지출을 등록하면 월별 결제 예정 금액이 여기 표시됩니다.</div>
+      <div>
+        <h2 className="section-title">📅 월별 결제 예정</h2>
+        <div className="panel">
+          <div className="empty">할부나 고정지출을 등록하면 월별 결제 예정 금액이 여기 표시됩니다.</div>
+        </div>
       </div>
     )
   }
 
   return (
     <div>
-      <h2 style={{ fontSize: 16, margin: '4px 4px 12px' }}>📅 월별 결제 예정</h2>
-      <div className="month-scroll">
-      {buckets.map((b) => {
+      <h2 className="section-title">📅 월별 결제 예정</h2>
+      <div className="month-list">
+      {shown.map((b) => {
         const isOpen = open === b.month
         return (
           <div className="month-card" key={b.month}>
@@ -59,6 +66,9 @@ export default function MonthlySummary() {
         )
       })}
       </div>
+      {hiddenCount > 0 && (
+        <div className="muted more-months">이후 {hiddenCount}개월은 우측 표에서 확인</div>
+      )}
     </div>
   )
 }
