@@ -7,6 +7,7 @@ type State = AppData & {
   addAsset: (a: Omit<Asset, 'id'>) => void
   updateAsset: (id: string, patch: Partial<Omit<Asset, 'id'>>) => void
   removeAsset: (id: string) => void
+  reorderAssets: (from: number, to: number) => void
 
   addCategory: (c: Omit<Category, 'id'>) => string
   updateCategory: (id: string, patch: Partial<Omit<Category, 'id'>>) => void
@@ -57,6 +58,16 @@ export const useStore = create<State>()(
           installments: s.installments.filter((i) => i.assetId !== id),
           fixedExpenses: s.fixedExpenses.filter((f) => f.assetId !== id),
         })),
+      // 드래그로 자산 순서 변경 (from 위치의 항목을 to 위치로 이동)
+      reorderAssets: (from, to) =>
+        set((s) => {
+          if (from === to || from < 0 || to < 0 || from >= s.assets.length || to >= s.assets.length)
+            return {}
+          const assets = [...s.assets]
+          const [moved] = assets.splice(from, 1)
+          assets.splice(to, 0, moved)
+          return { assets }
+        }),
 
       addCategory: (c) => {
         const id = uid()

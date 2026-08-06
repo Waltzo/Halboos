@@ -274,6 +274,76 @@ button.danger:hover { border-color: var(--danger); }
   gap: 8px;
 }
 
+/* 등록 내역 탭 */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  margin-bottom: 4px;
+  background: var(--panel-2);
+  border-radius: 10px;
+}
+.tabs .tab {
+  flex: 1;
+  padding: 7px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.tabs .tab:hover { color: var(--text); }
+.tabs .tab.on {
+  color: var(--text);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+/* 종료된 할부 / 고정지출 */
+.list-item.ended {
+  padding: 8px;
+  margin: 0 -8px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--muted);
+}
+.list-item.ended .li-main > div:first-child { color: var(--muted); }
+.end-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  font-size: 10px;
+  line-height: 16px;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+/* 자산 순서 드래그 */
+.drag-row { padding-left: 2px; }
+.drag-row.dragging { opacity: 0.4; }
+.drag-row.drag-over { box-shadow: inset 0 2px 0 var(--accent); }
+.drag-handle {
+  flex: none;
+  align-self: center;
+  padding: 2px 4px;
+  margin-right: 2px;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: grab;
+  touch-action: none;
+}
+.drag-handle:hover { color: var(--text); background: var(--panel-2); }
+.drag-handle:active { cursor: grabbing; }
+
 /* 고정지출 카테고리 묶음 */
 .cat-group { margin-top: 8px; }
 .cat-head {
