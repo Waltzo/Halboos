@@ -19,6 +19,18 @@ export default function Modal({
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  // 모달이 열려 있는 동안 뒤 페이지 스크롤 잠금 (스크롤바 폭만큼 패딩을 넣어 레이아웃 흔들림 방지)
+  useEffect(() => {
+    const { overflow, paddingRight } = document.body.style
+    const gap = window.innerWidth - document.documentElement.clientWidth
+    document.body.style.overflow = 'hidden'
+    if (gap > 0) document.body.style.paddingRight = `${gap}px`
+    return () => {
+      document.body.style.overflow = overflow
+      document.body.style.paddingRight = paddingRight
+    }
+  }, [])
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
