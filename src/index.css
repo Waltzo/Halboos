@@ -918,27 +918,13 @@ button.danger:hover { color: var(--danger); }
 /* 그룹 하위 내역 행 들여쓰기 */
 .matrix tr.child-row .rowlabel { padding-left: 20px; }
 
-/* ── 결제일 경과 = 이번 달 결제 완료 ── */
-/* .prepaid 뒤에 선언 → 배경은 회색이 이기고(인라인), 점선 테두리는 유지 */
+/* ── 결제일 경과 = 이번 달 결제 완료 (매트릭스 표 전용) ── */
+/* .prepaid 뒤에 선언 → 배경은 회색이 이기고, 점선 테두리는 유지 */
 .matrix .cell.settled {
   background: var(--table-base-2);
   color: var(--muted);
   text-decoration: line-through;
   text-decoration-color: var(--muted);
-}
-.cardgroup.settled { opacity: 0.55; }
-.cardgroup.settled .cg-head .amt { text-decoration: line-through; }
-.settled-tag {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 0 6px;
-  font-size: 10px;
-  line-height: 16px;
-  color: var(--muted);
-  background: var(--surface-sunken);
-  box-shadow: var(--sh-well);
-  border-radius: var(--r-pill);
-  vertical-align: middle;
 }
 
 /* 라벨이 시스템/라이트/다크로 바뀔 때 툴바가 흔들리지 않도록 폭 고정 */

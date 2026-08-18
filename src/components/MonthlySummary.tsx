@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../store'
-import { isAssetSettled } from '../lib/settled'
 import { aggregate } from '../lib/aggregate'
 import { formatKRW, formatMonthKr, currentMonth } from '../lib/format'
 import type { AssetGroup } from '../lib/aggregate'
@@ -59,7 +58,7 @@ export default function MonthlySummary() {
               <div className="month-body">
                 {b.byAsset.length === 0 && <div className="empty">이 달 결제 예정 없음</div>}
                 {b.byAsset.map((g) => (
-                  <AssetGroupView key={g.asset.id} g={g} settled={isAssetSettled(g.asset, b.month)} />
+                  <AssetGroupView key={g.asset.id} g={g} />
                 ))}
               </div>
             )}
@@ -74,7 +73,7 @@ export default function MonthlySummary() {
   )
 }
 
-function AssetGroupView({ g, settled }: { g: AssetGroup; settled?: boolean }) {
+function AssetGroupView({ g }: { g: AssetGroup }) {
   const a = g.asset
   const sub =
     a.kind === 'card'
@@ -83,13 +82,12 @@ function AssetGroupView({ g, settled }: { g: AssetGroup; settled?: boolean }) {
         ? `· ${a.bank}`
         : '· 계좌'
   return (
-    <div className={'cardgroup' + (settled ? ' settled' : '')}>
+    <div className="cardgroup">
       <div className="cg-head">
         <span className="cg-name">
           <AssetBadge asset={a} />
           {a.name}
           <span className="cg-sub">{sub}</span>
-          {settled && <span className="settled-tag">결제완료</span>}
         </span>
         <span className="amt">{formatKRW(g.subtotal)}</span>
       </div>
