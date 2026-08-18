@@ -1,5 +1,5 @@
 import type { AppData, Asset } from '../types'
-import { buildSchedule, lastBillingMonth } from './installment'
+import { buildSchedule, lastBillingMonth, prepayNo, isPrepaidEffective } from './installment'
 import { addMonths, currentMonth, monthDiff, monthLte } from './format'
 
 export type AssetLine = {
@@ -10,6 +10,7 @@ export type AssetLine = {
   principal: number
   fee: number
   amount: number
+  prepay?: boolean // 선결제 잔액 일시상환 회차
 }
 
 export type AssetGroup = {
@@ -68,6 +69,8 @@ export function aggregate(data: AppData): MonthBucket[] {
   }
 
   for (const inst of data.installments) {
+    const pNo = prepayNo(inst)
+    const prepaid = isPrepaidEffective(inst)
     for (const r of buildSchedule(inst)) {
       push(r.month, inst.assetId, {
         label: inst.label,
@@ -76,6 +79,7 @@ export function aggregate(data: AppData): MonthBucket[] {
         principal: r.principal,
         fee: r.fee,
         amount: r.amount,
+        prepay: prepaid && r.installmentNo === pNo,
       })
     }
   }

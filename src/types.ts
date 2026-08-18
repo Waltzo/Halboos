@@ -20,6 +20,7 @@ export type Installment = {
   interest: InterestType
   annualRate: number // 유이자 연이율(%). 무이자면 0
   firstBillingMonth: string // 'YYYY-MM' 첫 청구월
+  prepaidMonth?: string // 'YYYY-MM' 선결제(잔액 일시상환)한 달. 이 달 이후 청구 없음
 }
 
 // 고정지출 분류 (사용자가 직접 생성)

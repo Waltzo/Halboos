@@ -82,6 +82,7 @@ export default function AssetForm({
               value={billingDay}
               onChange={(e) => setBillingDay(e.target.value)}
             />
+            <span className="muted hint">29~31일은 해당 월에 없으면 말일로 처리됩니다</span>
           </label>
         </>
       ) : (

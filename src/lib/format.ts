@@ -39,7 +39,17 @@ export function currentMonth(): string {
   return toMonthStr(d.getFullYear(), d.getMonth() + 1)
 }
 
-// 'YYYY-MM' + billingDay → '2026년 7월 15일' 표시용
+// 이번 달에서 지정한 결제일이 되었거나 지났는지 (결제일 당일부터 결제 완료).
+// 결제일이 그 달에 없으면(예: 31일 · 2월) 말일로 당겨서 판단한다.
+export function isBillingDayPassed(billingDay: number, today: Date = new Date()): boolean {
+  const y = today.getFullYear()
+  const m = today.getMonth() + 1
+  const lastDay = new Date(y, m, 0).getDate() // m이 1-based이므로 '다음 달 0일' = 이번 달 말일
+  const effective = Math.min(Math.max(1, Math.round(billingDay)), lastDay)
+  return today.getDate() >= effective
+}
+
+// 'YYYY-MM' → '2026년 7월' 표시용
 export function formatMonthKr(ym: string): string {
   const { year, month } = parseMonth(ym)
   return `${year}년 ${month}월`

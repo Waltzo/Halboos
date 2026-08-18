@@ -7,7 +7,7 @@ import {
 } from '../store'
 import AssetBadge from './AssetBadge'
 import { formatKRW, formatMonthKr, currentMonth } from '../lib/format'
-import { lastBillingMonth, totalFee } from '../lib/installment'
+import { lastBillingMonth, totalFee, waivedFee, isPrepaidEffective } from '../lib/installment'
 import type { FixedExpense, Installment } from '../types'
 import type { ModalState } from '../App'
 
@@ -206,11 +206,14 @@ export default function Registry({ onEdit }: { onEdit: (m: ModalState) => void }
           {sortedInstallments.map((i) => {
             const fee = totalFee(i)
             const ended = isInstallmentEnded(i, now)
+            const prepaid = isPrepaidEffective(i)
+            const waived = waivedFee(i)
             return (
               <div className={'list-item' + (ended ? ' ended' : '')} key={i.id}>
                 <div className="li-main">
                   <div>
                     {i.label} <span className="muted">· {assetName(i.assetId)}</span>
+                    {prepaid && <span className="end-tag">선결제</span>}
                     {ended && <span className="end-tag">종료</span>}
                   </div>
                   <div className="muted">
@@ -218,6 +221,8 @@ export default function Registry({ onEdit }: { onEdit: (m: ModalState) => void }
                     {i.interest === 'interest' ? `유이자 ${i.annualRate}%` : '무이자'} ·{' '}
                     {formatMonthKr(i.firstBillingMonth)}~{formatMonthKr(lastBillingMonth(i))}
                     {fee > 0 && ` · 총수수료 ${formatKRW(fee)}`}
+                    {prepaid &&
+                      ` · ${formatMonthKr(i.prepaidMonth!)} 선결제(수수료 ${formatKRW(waived)} 면제)`}
                   </div>
                 </div>
                 <div className="li-actions">

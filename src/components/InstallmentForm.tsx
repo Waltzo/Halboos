@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useStore } from '../store'
-import type { InterestType } from '../types'
-import { currentMonth } from '../lib/format'
+import type { Installment, InterestType } from '../types'
+import { currentMonth, formatKRW, formatMonthKr } from '../lib/format'
+import { buildSchedule, waivedFee } from '../lib/installment'
 
 export default function InstallmentForm({
   editingId,
@@ -28,6 +29,36 @@ export default function InstallmentForm({
   const [firstBillingMonth, setFirstBillingMonth] = useState(
     editing?.firstBillingMonth ?? currentMonth(),
   )
+  const [prepaid, setPrepaid] = useState(!!editing?.prepaidMonth)
+  const [prepaidMonth, setPrepaidMonth] = useState(editing?.prepaidMonth ?? currentMonth())
+
+  // 선결제 결과 미리보기 — 입력 중인 값으로 임시 스케줄을 만들어 마지막 회차를 보여줌
+  const preview = useMemo(() => {
+    const t = Math.round(Number(total) || 0)
+    const mm = Math.max(1, Math.round(Number(months) || 1))
+    if (!prepaid || t <= 0 || !prepaidMonth) return null
+    const draft: Installment = {
+      id: '',
+      assetId,
+      label,
+      total: t,
+      months: mm,
+      interest,
+      annualRate: interest === 'interest' ? Number(annualRate) || 0 : 0,
+      firstBillingMonth,
+      prepaidMonth,
+    }
+    const rows = buildSchedule(draft)
+    const last = rows[rows.length - 1]
+    if (!last) return null
+    return {
+      month: last.month,
+      no: last.installmentNo,
+      months: mm,
+      amount: last.amount,
+      waived: waivedFee(draft),
+    }
+  }, [prepaid, prepaidMonth, total, months, interest, annualRate, firstBillingMonth, assetId, label])
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,6 +77,7 @@ export default function InstallmentForm({
       interest,
       annualRate: interest === 'interest' ? Number(annualRate) || 0 : 0,
       firstBillingMonth,
+      prepaidMonth: prepaid && prepaidMonth ? prepaidMonth : undefined,
     }
     if (editing) update(editing.id, data)
     else add(data)
@@ -124,6 +156,38 @@ export default function InstallmentForm({
         <span>첫 청구월</span>
         <input type="month" value={firstBillingMonth} onChange={(e) => setFirstBillingMonth(e.target.value)} />
       </label>
+
+      <label className="field">
+        <span>선결제 (잔액 일시상환)</span>
+        <span className="check-inline">
+          <input
+            type="checkbox"
+            checked={prepaid}
+            onChange={(e) => setPrepaid(e.target.checked)}
+          />
+          남은 원금을 한 번에 결제 · 이후 수수료 면제
+        </span>
+      </label>
+
+      {prepaid && (
+        <label className="field">
+          <span>선결제 월</span>
+          <input
+            type="month"
+            min={firstBillingMonth}
+            value={prepaidMonth}
+            onChange={(e) => setPrepaidMonth(e.target.value)}
+          />
+          {preview && (
+            <span className="muted hint">
+              {formatMonthKr(preview.month)}에 {preview.no}/{preview.months}회차 + 잔여 원금{' '}
+              {formatKRW(preview.amount)} 일시 청구
+              {preview.months > preview.no && ` · 이후 ${preview.months - preview.no}회 청구 없음`}
+              {preview.waived > 0 && ` · 수수료 ${formatKRW(preview.waived)} 면제`}
+            </span>
+          )}
+        </label>
+      )}
 
       <div className="form-actions">
         {editing && (

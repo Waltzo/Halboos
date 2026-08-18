@@ -1,5 +1,5 @@
 import type { AppData, Asset, Category } from '../types'
-import { buildSchedule, lastBillingMonth } from './installment'
+import { buildSchedule, lastBillingMonth, isPrepaidEffective } from './installment'
 import { computeHorizon } from './aggregate'
 import { monthLte } from './format'
 
@@ -13,6 +13,7 @@ export type MatrixRow = {
   category?: Category // 고정지출만, 없으면 미분류
   kind: 'inst' | 'fixed'
   end: string // 종료월 'YYYY-MM' (무기한이면 NO_END)
+  prepaidIdx?: number // 선결제 잔액 일시상환이 찍히는 열 index (없으면 undefined)
   cells: number[] // months.length 길이, 없는 달은 0
   rowTotal: number
 }
@@ -22,6 +23,7 @@ export type CategoryTotal = {
   name: string
   color?: string
   cells: number[]
+  rows: MatrixRow[] // 이 카테고리의 고정지출 행 (정렬 순서 유지)
 }
 
 export type Matrix = {
@@ -43,16 +45,19 @@ export function buildMatrix(data: AppData): Matrix {
 
   for (const inst of data.installments) {
     const cells = new Array(months.length).fill(0)
-    for (const r of buildSchedule(inst)) {
+    const sched = buildSchedule(inst)
+    for (const r of sched) {
       const i = idx.get(r.month)
       if (i != null) cells[i] += r.amount
     }
+    const lastRow = sched[sched.length - 1]
     rows.push({
       id: inst.id,
       label: inst.label,
       asset: assetById.get(inst.assetId),
       kind: 'inst',
       end: lastBillingMonth(inst),
+      prepaidIdx: isPrepaidEffective(inst) && lastRow ? idx.get(lastRow.month) : undefined,
       cells,
       rowTotal: cells.reduce((s, v) => s + v, 0),
     })
@@ -98,11 +103,13 @@ export function buildMatrix(data: AppData): Matrix {
     if (r.kind !== 'fixed') continue
     const key = r.category?.id ?? ''
     if (categoryTotals.some((c) => c.key === key)) continue
+    const inCat = (x: MatrixRow) => x.kind === 'fixed' && (x.category?.id ?? '') === key
     categoryTotals.push({
       key,
       name: r.category?.name ?? '미분류',
       color: r.category?.color,
-      cells: sumOf((x) => x.kind === 'fixed' && (x.category?.id ?? '') === key),
+      cells: sumOf(inCat),
+      rows: rows.filter(inCat),
     })
   }
 

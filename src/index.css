@@ -1,40 +1,195 @@
-/* 뉴모피즘: 배경과 표면이 같은 색이고, 밝은/어두운 이중 그림자로 요철을 만든다.
-   --shadow* = 돌출(raised), --shadow-in* = 함몰(inset, 입력·트랙·비활성 영역) */
+/* 글래스모피즘: 반투명 표면 + backdrop-blur + 밝은 테두리 하이라이트.
+   backdrop-filter 는 배경(body 그라데이션)을 직접 보는 4개 셀렉터에만 건다:
+   .panel / .month-card / .modal / .modal-overlay.
+   .matrix 내부는 전면 금지 — 셀 수가 많고 sticky 셀이 뒤 내용을 가려야 하기 때문. */
 :root {
-  --bg: #e9ecf1;
-  --panel: #e9ecf1;
-  --panel-2: #e3e6ec;
-  --text: #1f2429;
-  --muted: #79818d;
-  --border: #d7dbe3;
-  --accent: #4f7cff;
-  --danger: #e5484d;
-  --ok: #22b573;
-  --radius: 16px;
+  /* ── 라이트 원본값 ─────────────────────────────────────── */
+  --l-bg: #e8ecf5;
+  --l-grad-1: rgba(79, 124, 255, 0.22);
+  --l-grad-2: rgba(162, 89, 255, 0.16);
+  --l-grad-3: rgba(0, 184, 212, 0.12);
 
-  --sh-dark: #c5cad4;
-  --sh-light: #ffffff;
+  --l-surface: rgba(255, 255, 255, 0.62);
+  --l-surface-2: rgba(255, 255, 255, 0.42);
+  --l-surface-strong: rgba(255, 255, 255, 0.8);
+  --l-surface-hover: rgba(255, 255, 255, 0.82);
+  --l-surface-sunken: rgba(15, 23, 42, 0.055);
+  --l-surface-solid: #f4f6fb;
+  --l-table-base: #f5f7fc;
+  --l-table-base-2: #eaeef7;
 
-  --shadow: 7px 7px 14px var(--sh-dark), -7px -7px 14px var(--sh-light);
-  --shadow-sm: 3px 3px 6px var(--sh-dark), -3px -3px 6px var(--sh-light);
-  --shadow-in: inset 5px 5px 10px var(--sh-dark), inset -5px -5px 10px var(--sh-light);
-  --shadow-in-sm: inset 2px 2px 4px var(--sh-dark), inset -2px -2px 4px var(--sh-light);
+  --l-glass-border: rgba(255, 255, 255, 0.7);
+  --l-border: rgba(15, 23, 42, 0.12);
+  --l-border-strong: rgba(15, 23, 42, 0.26);
+  --l-inner-hl: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 
-  color-scheme: light dark;
+  --l-text: #131822;
+  --l-muted: #5b6472;
+  --l-accent: #3b63e0;
+  --l-accent-hover: #2f56d4;
+  --l-accent-ink: #3b63e0;
+  --l-accent-contrast: #ffffff;
+  --l-accent-glow: rgba(59, 99, 224, 0.45);
+  --l-ring: 0 0 0 3px rgba(59, 99, 224, 0.3);
+  --l-danger: #d13b40;
+  --l-ok: #12996b;
+
+  --l-sh-0: 0 1px 1px rgba(15, 23, 42, 0.06);
+  --l-sh-1: 0 1px 2px rgba(15, 23, 42, 0.06), 0 2px 8px rgba(15, 23, 42, 0.07);
+  --l-sh-2: 0 2px 6px rgba(15, 23, 42, 0.08), 0 10px 28px rgba(15, 23, 42, 0.1);
+  --l-sh-3: 0 8px 24px rgba(15, 23, 42, 0.14), 0 28px 68px rgba(15, 23, 42, 0.18);
+  --l-sh-well: inset 0 1px 2px rgba(15, 23, 42, 0.07);
+  --l-scrim: rgba(15, 23, 42, 0.42);
+  --l-scrollbar: rgba(15, 23, 42, 0.22);
+
+  /* 히트맵 알파 램프 — MatrixView 는 --hm-c(색) / --hm-a(0~1 비율) 만 넘기고
+     알파는 여기서 정한다. 라이트는 밝은 베이스 위라 진한 잉크가 항상 이긴다. */
+  --l-hm-lo: 14;
+  --l-hm-hi: 70;
+
+  /* ── 다크 원본값 ───────────────────────────────────────── */
+  --d-bg: #0e1116;
+  --d-grad-1: rgba(79, 124, 255, 0.2);
+  --d-grad-2: rgba(162, 89, 255, 0.15);
+  --d-grad-3: rgba(0, 184, 212, 0.1);
+
+  --d-surface: rgba(255, 255, 255, 0.065);
+  --d-surface-2: rgba(255, 255, 255, 0.04);
+  --d-surface-strong: rgba(28, 33, 44, 0.82);
+  --d-surface-hover: rgba(255, 255, 255, 0.11);
+  --d-surface-sunken: rgba(0, 0, 0, 0.28);
+  --d-surface-solid: #191e27;
+  --d-table-base: #171b24;
+  --d-table-base-2: #12161e;
+
+  --d-glass-border: rgba(255, 255, 255, 0.12);
+  --d-border: rgba(255, 255, 255, 0.11);
+  --d-border-strong: rgba(255, 255, 255, 0.24);
+  --d-inner-hl: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  --d-text: #e9edf5;
+  --d-muted: #9aa4b4;
+  --d-accent: #3b63e0;
+  --d-accent-hover: #4b71ea;
+  --d-accent-ink: #9db4ff;
+  --d-accent-contrast: #ffffff;
+  --d-accent-glow: rgba(93, 129, 255, 0.5);
+  --d-ring: 0 0 0 3px rgba(125, 155, 255, 0.32);
+  --d-danger: #f36b6f;
+  --d-ok: #3ecf94;
+
+  --d-sh-0: 0 1px 1px rgba(0, 0, 0, 0.4);
+  --d-sh-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.34);
+  --d-sh-2: 0 2px 6px rgba(0, 0, 0, 0.42), 0 10px 28px rgba(0, 0, 0, 0.44);
+  --d-sh-3: 0 8px 24px rgba(0, 0, 0, 0.55), 0 28px 68px rgba(0, 0, 0, 0.6);
+  --d-sh-well: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  --d-scrim: rgba(4, 6, 10, 0.62);
+  --d-scrollbar: rgba(255, 255, 255, 0.2);
+
+  /* 다크는 어두운 베이스 위 → 밝은 잉크가 이겨야 하므로 알파 상한을 낮춘다.
+     (0.55 만 깔아도 #f2a900 위 밝은 글자가 4.19:1 로 AA 미달) */
+  --d-hm-lo: 10;
+  --d-hm-hi: 35;
+
+  /* ── 테마 무관 ─────────────────────────────────────────── */
+  --blur: 16px;
+  --blur-sm: 10px;
+  --blur-overlay: 6px;
+  --sat: 165%;
+
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-pill: 999px;
+
+  /* ── 별칭 = 라이트 (기본) ───────────────────────────────── */
+  --bg: var(--l-bg);
+  --grad-1: var(--l-grad-1); --grad-2: var(--l-grad-2); --grad-3: var(--l-grad-3);
+  --surface: var(--l-surface); --surface-2: var(--l-surface-2);
+  --surface-strong: var(--l-surface-strong); --surface-hover: var(--l-surface-hover);
+  --surface-sunken: var(--l-surface-sunken); --surface-solid: var(--l-surface-solid);
+  --table-base: var(--l-table-base); --table-base-2: var(--l-table-base-2);
+  --glass-border: var(--l-glass-border); --border: var(--l-border);
+  --border-strong: var(--l-border-strong); --inner-hl: var(--l-inner-hl);
+  --text: var(--l-text); --muted: var(--l-muted);
+  --accent: var(--l-accent); --accent-hover: var(--l-accent-hover);
+  --accent-ink: var(--l-accent-ink); --accent-contrast: var(--l-accent-contrast);
+  --accent-glow: var(--l-accent-glow); --ring: var(--l-ring);
+  --danger: var(--l-danger); --ok: var(--l-ok);
+  --sh-0: var(--l-sh-0); --sh-1: var(--l-sh-1); --sh-2: var(--l-sh-2);
+  --sh-3: var(--l-sh-3); --sh-well: var(--l-sh-well);
+  --scrim: var(--l-scrim); --scrollbar: var(--l-scrollbar);
+  --hm-lo: var(--l-hm-lo); --hm-hi: var(--l-hm-hi);
+
+  color-scheme: light;
 }
 
+/* OS 다크 — 단, 사용자가 라이트를 수동 선택했으면 무시 */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #24282f;
-    --panel: #24282f;
-    --panel-2: #1f232a;
-    --text: #e8eaed;
-    --muted: #98a0ab;
-    --border: #2e343d;
-
-    --sh-dark: #15181d;
-    --sh-light: #2f353e;
+  :root:not([data-theme='light']) {
+    --bg: var(--d-bg);
+    --grad-1: var(--d-grad-1); --grad-2: var(--d-grad-2); --grad-3: var(--d-grad-3);
+    --surface: var(--d-surface); --surface-2: var(--d-surface-2);
+    --surface-strong: var(--d-surface-strong); --surface-hover: var(--d-surface-hover);
+    --surface-sunken: var(--d-surface-sunken); --surface-solid: var(--d-surface-solid);
+    --table-base: var(--d-table-base); --table-base-2: var(--d-table-base-2);
+    --glass-border: var(--d-glass-border); --border: var(--d-border);
+    --border-strong: var(--d-border-strong); --inner-hl: var(--d-inner-hl);
+    --text: var(--d-text); --muted: var(--d-muted);
+    --accent: var(--d-accent); --accent-hover: var(--d-accent-hover);
+    --accent-ink: var(--d-accent-ink); --accent-contrast: var(--d-accent-contrast);
+    --accent-glow: var(--d-accent-glow); --ring: var(--d-ring);
+    --danger: var(--d-danger); --ok: var(--d-ok);
+    --sh-0: var(--d-sh-0); --sh-1: var(--d-sh-1); --sh-2: var(--d-sh-2);
+    --sh-3: var(--d-sh-3); --sh-well: var(--d-sh-well);
+    --scrim: var(--d-scrim); --scrollbar: var(--d-scrollbar);
+    --hm-lo: var(--d-hm-lo); --hm-hi: var(--d-hm-hi);
+    color-scheme: dark;
   }
+}
+
+/* 수동 다크 — OS 가 라이트여도 이긴다 */
+:root[data-theme='dark'] {
+  --bg: var(--d-bg);
+  --grad-1: var(--d-grad-1); --grad-2: var(--d-grad-2); --grad-3: var(--d-grad-3);
+  --surface: var(--d-surface); --surface-2: var(--d-surface-2);
+  --surface-strong: var(--d-surface-strong); --surface-hover: var(--d-surface-hover);
+  --surface-sunken: var(--d-surface-sunken); --surface-solid: var(--d-surface-solid);
+  --table-base: var(--d-table-base); --table-base-2: var(--d-table-base-2);
+  --glass-border: var(--d-glass-border); --border: var(--d-border);
+  --border-strong: var(--d-border-strong); --inner-hl: var(--d-inner-hl);
+  --text: var(--d-text); --muted: var(--d-muted);
+  --accent: var(--d-accent); --accent-hover: var(--d-accent-hover);
+  --accent-ink: var(--d-accent-ink); --accent-contrast: var(--d-accent-contrast);
+  --accent-glow: var(--d-accent-glow); --ring: var(--d-ring);
+  --danger: var(--d-danger); --ok: var(--d-ok);
+  --sh-0: var(--d-sh-0); --sh-1: var(--d-sh-1); --sh-2: var(--d-sh-2);
+  --sh-3: var(--d-sh-3); --sh-well: var(--d-sh-well);
+  --scrim: var(--d-scrim); --scrollbar: var(--d-scrollbar);
+  --hm-lo: var(--d-hm-lo); --hm-hi: var(--d-hm-hi);
+  color-scheme: dark;
+}
+
+/* backdrop-filter 미지원 / 투명도 축소 선호 → 표면을 거의 불투명하게 */
+@supports not (backdrop-filter: blur(2px)) {
+  :root {
+    --l-surface: rgba(255, 255, 255, 0.9);
+    --l-surface-strong: rgba(255, 255, 255, 0.96);
+    --d-surface: rgba(30, 35, 46, 0.92);
+    --d-surface-strong: rgba(30, 35, 46, 0.97);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .panel, .month-card, .modal, .modal-overlay { backdrop-filter: none !important; }
+  :root {
+    --l-surface: rgba(255, 255, 255, 0.95);
+    --d-surface: rgba(30, 35, 46, 0.95);
+  }
+  body::before { opacity: 0.35; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; }
 }
 
 * { box-sizing: border-box; }
@@ -43,25 +198,39 @@
    투명 테두리 + background-clip으로 어떤 배경 위에서도 자연스럽게 뜬다. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--sh-dark) transparent;
+  scrollbar-color: var(--scrollbar) transparent;
 }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: var(--sh-dark);
+  background: var(--scrollbar);
   background-clip: padding-box;
   border: 3px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); background-clip: padding-box; }
 
 body {
   margin: 0;
+  min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo',
     'Noto Sans KR', Roboto, sans-serif;
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+}
+/* 유리가 굴절할 배경. Modal.tsx 가 body.style 을 건드리므로 배경은 의사요소로 분리.
+   fixed 라 스크롤해도 굴절이 흔들리지 않고 리페인트도 없다. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(1100px 760px at 10% -12%, var(--grad-1), transparent 62%),
+    radial-gradient(980px 700px at 90% 2%, var(--grad-2), transparent 58%),
+    radial-gradient(900px 900px at 48% 112%, var(--grad-3), transparent 60%);
 }
 
 .app {
@@ -108,11 +277,12 @@ header.top .sub { color: var(--muted); font-size: 13px; }
 }
 
 .panel {
-  background: var(--panel);
-  /* 투명 테두리로 기존 박스 폭(테두리 2px 포함)을 그대로 유지 */
-  border: 1px solid transparent;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur)) saturate(var(--sat));
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(var(--sat));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-2), var(--inner-hl);
   padding: 16px;
   margin-bottom: 16px;
 }
@@ -146,17 +316,18 @@ label.field > span { display: block; margin-bottom: 4px; }
 input, select {
   width: 100%;
   padding: 8px 10px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  background: var(--panel);
-  box-shadow: var(--shadow-in-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  box-shadow: var(--sh-well);
   color: var(--text);
   font-size: 14px;
 }
 
 input:focus, select:focus {
   outline: none;
-  box-shadow: var(--shadow-in-sm), 0 0 0 2px var(--accent);
+  border-color: var(--accent);
+  box-shadow: var(--sh-well), var(--ring);
 }
 
 .row { display: flex; gap: 8px; }
@@ -164,35 +335,59 @@ input:focus, select:focus {
 
 button {
   cursor: pointer;
-  border: 1px solid transparent;
-  background: var(--panel);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--glass-border);
+  background: var(--surface);
+  box-shadow: var(--sh-1), var(--inner-hl);
   color: var(--text);
   padding: 8px 12px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   font-size: 14px;
   font-weight: 500;
-  transition: box-shadow 0.15s ease, color 0.15s ease;
+  transition: background-color 0.16s ease, box-shadow 0.16s ease, color 0.16s ease,
+    transform 0.12s ease;
 }
-button:hover { color: var(--accent); }
-/* 누르면 눌린 것처럼 함몰 */
-button:active { box-shadow: var(--shadow-in-sm); }
-button:focus-visible { outline: none; box-shadow: var(--shadow-sm), 0 0 0 2px var(--accent); }
+button:hover { color: var(--accent-ink); }
+/* 누르면 실제로 살짝 내려앉는다 (가짜 함몰 대신 물리적 반응) */
+button:active { transform: translateY(1px); box-shadow: var(--sh-0), var(--inner-hl); }
+button:focus-visible { outline: none; box-shadow: var(--sh-1), var(--ring); }
 
 button.primary {
   background: var(--accent);
-  color: #fff;
-  box-shadow: var(--shadow-sm);
+  border-color: transparent;
+  color: var(--accent-contrast);
+  box-shadow: var(--sh-1), inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
-button.primary:hover { color: #fff; filter: brightness(1.06); }
-button.primary:active { filter: none; box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.35); }
+button.primary:hover { background: var(--accent-hover); color: var(--accent-contrast); }
+button.primary:active { transform: translateY(1px); box-shadow: var(--sh-0); }
 
 /* ghost = 평평하게 배경에 묻어 있다가 hover 시 떠오름 */
-button.ghost { background: transparent; box-shadow: none; color: var(--muted); }
-button.ghost:hover { background: var(--panel); box-shadow: var(--shadow-sm); color: var(--accent); }
-button.ghost:active { background: var(--panel); box-shadow: var(--shadow-in-sm); }
+button.ghost { color: var(--muted); }
+button.ghost:hover {
+  background: var(--surface-hover);
+  box-shadow: var(--sh-1), var(--inner-hl);
+  color: var(--accent-ink);
+}
+button.ghost:active {
+  background: var(--surface-sunken);
+  box-shadow: var(--sh-well);
+  transform: translateY(1px);
+}
 
-button.tiny { padding: 4px 8px; font-size: 12px; border-radius: 8px; }
+button.tiny { padding: 4px 8px; font-size: 12px; border-radius: var(--r-sm); }
+
+/* 평면 버튼 계열 — 전역 button 의 유리 표면·그림자·테두리를 한 곳에서 해제한다.
+   (.rl-link / .cat-toggle 은 button 요소라 그대로 두면 표 안에서 유리 카드처럼 보인다) */
+button.ghost,
+.tabs .tab,
+.drag-handle,
+.matrix .rowlabel .rl-link,
+.matrix .cat-toggle {
+  background: transparent;
+  box-shadow: none;
+  border-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
 button.danger { color: var(--danger); }
 button.danger:hover { color: var(--danger); }
 
@@ -200,27 +395,16 @@ button.danger:hover { color: var(--danger); }
 .form-actions { display: flex; gap: 8px; }
 .form-actions .submit { flex: 1; }
 
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-  background: var(--panel);
-  box-shadow: var(--shadow-in-sm);
-}
-
 .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
 
 .asset-badge {
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--inner-hl), 0 1px 2px rgba(15, 23, 42, 0.2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 22px;
   height: 22px;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
   font-size: 12px;
   line-height: 1;
   flex: none;
@@ -242,15 +426,15 @@ button.danger:hover { color: var(--danger); }
 .muted { color: var(--muted); font-size: 12px; }
 .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
 
-/* Monthly summary — 가까운 6개월만 보여주므로 스크롤 없음.
-   패딩=음수마진이라 콘텐츠 폭은 그대로면서 카드 그림자가 잘리지 않는다. */
-.month-list { padding: 8px; margin: -8px; }
+/* Monthly summary — 가까운 6개월만 보여주므로 스크롤 없음 */
 .more-months { padding: 12px 4px 0; text-align: center; }
 .month-card {
-  background: var(--panel);
-  border: 1px solid transparent;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur-sm)) saturate(var(--sat));
+  -webkit-backdrop-filter: blur(var(--blur-sm)) saturate(var(--sat));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-2), var(--inner-hl);
   margin-bottom: 12px;
   overflow: hidden;
 }
@@ -263,23 +447,23 @@ button.danger:hover { color: var(--danger); }
   cursor: pointer;
   user-select: none;
 }
-.month-head:hover { background: var(--panel-2); }
-.month-head:hover .mtitle { color: var(--accent); }
+.month-head:hover { background: var(--surface-hover); }
+.month-head:hover .mtitle { color: var(--accent-ink); }
 .month-head .mtitle { font-weight: 600; }
 .month-head .mtotal { font-weight: 700; font-size: 16px; }
 
 .bar-track {
   height: 6px;
-  background: var(--panel);
-  box-shadow: var(--shadow-in-sm);
-  border-radius: 999px;
+  background: var(--surface-sunken);
+  box-shadow: var(--sh-well);
+  border-radius: var(--r-pill);
   margin: 0 16px 12px;
 }
 .bar-fill {
   height: 100%;
-  background: var(--accent);
-  border-radius: 999px;
-  box-shadow: 0 0 6px rgba(79, 124, 255, 0.5);
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  border-radius: var(--r-pill);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .month-body { padding: 0 16px 12px; border-top: 1px solid var(--border); }
@@ -314,8 +498,9 @@ button.danger:hover { color: var(--danger); }
 .pill-toggle button { flex: 1; }
 .pill-toggle button.on {
   background: var(--accent);
-  color: #fff;
-  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.3);
+  border-color: transparent;
+  color: var(--accent-contrast);
+  box-shadow: var(--sh-0), inset 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* toolbar */
@@ -347,9 +532,10 @@ button.danger:hover { color: var(--danger); }
   gap: 4px;
   padding: 4px;
   margin-bottom: 8px;
-  background: var(--panel);
-  box-shadow: var(--shadow-in-sm);
-  border-radius: 12px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  box-shadow: var(--sh-well);
+  border-radius: var(--r-md);
 }
 .tabs .tab {
   flex: 1;
@@ -357,19 +543,16 @@ button.danger:hover { color: var(--danger); }
   font-size: 13px;
   font-weight: 600;
   color: var(--muted);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 9px;
-  box-shadow: none;
+  border-radius: var(--r-sm);
   cursor: pointer;
 }
 .tabs .tab:hover { color: var(--text); }
 .tabs .tab.on, .tabs .tab.on:hover {
-  color: var(--accent);
-  background: var(--panel);
-  box-shadow: var(--shadow-sm);
+  color: var(--accent-ink);
+  background: var(--surface-strong);
+  border-color: var(--glass-border);
+  box-shadow: var(--sh-1), var(--inner-hl);
 }
-.tabs .tab.on:active { box-shadow: var(--shadow-sm); }
 
 /* 종료된 할부 / 고정지출 */
 /* 종료 항목 = 함몰된 홈에 가라앉은 느낌 */
@@ -377,9 +560,9 @@ button.danger:hover { color: var(--danger); }
   padding: 8px;
   margin: 4px -8px;
   border-top: none;
-  border-radius: 12px;
-  background: var(--panel-2);
-  box-shadow: var(--shadow-in-sm);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+  box-shadow: var(--sh-well);
   color: var(--muted);
 }
 .list-item.ended .li-main > div:first-child { color: var(--muted); }
@@ -390,9 +573,9 @@ button.danger:hover { color: var(--danger); }
   font-size: 10px;
   line-height: 16px;
   color: var(--muted);
-  background: var(--panel);
-  box-shadow: var(--shadow-sm);
-  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
   vertical-align: middle;
 }
 
@@ -408,15 +591,16 @@ button.danger:hover { color: var(--danger); }
   font-size: 14px;
   line-height: 1;
   color: var(--muted);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  box-shadow: none;
+  border-radius: var(--r-sm);
   cursor: grab;
   touch-action: none;
 }
-.drag-handle:hover { color: var(--accent); background: var(--panel); box-shadow: var(--shadow-sm); }
-.drag-handle:active { cursor: grabbing; box-shadow: var(--shadow-in-sm); }
+.drag-handle:hover {
+  color: var(--accent-ink);
+  background: var(--surface-hover);
+  box-shadow: var(--sh-0);
+}
+.drag-handle:active { cursor: grabbing; box-shadow: none; transform: translateY(1px); }
 
 /* 고정지출 카테고리 묶음 */
 .cat-group { margin-top: 8px; }
@@ -440,10 +624,9 @@ button.danger:hover { color: var(--danger); }
   padding: 0 5px;
   font-size: 10px;
   color: var(--muted);
-  border: 1px solid transparent;
-  background: var(--panel);
-  box-shadow: var(--shadow-in-sm);
-  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: var(--r-xs);
   vertical-align: middle;
 }
 
@@ -457,11 +640,12 @@ button.danger:hover { color: var(--danger); }
   padding: 0;
   cursor: pointer;
   position: relative;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--inner-hl), 0 1px 3px rgba(15, 23, 42, 0.24);
 }
-.swatch:active { box-shadow: var(--shadow-sm); }
+/* 링 간격은 반드시 불투명 — 반투명이면 스와치 색이 간격으로 새어나온다 */
 .swatch.on, .swatch.on:active {
-  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent), var(--shadow-sm);
+  box-shadow: 0 0 0 2px var(--surface-solid), 0 0 0 4px var(--accent),
+    0 1px 3px rgba(15, 23, 42, 0.24);
 }
 .swatch.custom {
   display: inline-flex;
@@ -469,8 +653,8 @@ button.danger:hover { color: var(--danger); }
   justify-content: center;
   font-size: 13px;
   border-style: dashed;
-  border-color: var(--border);
-  background: var(--panel);
+  border-color: var(--border-strong);
+  background: var(--surface-2);
   color: var(--muted);
   overflow: hidden;
 }
@@ -489,8 +673,9 @@ button.danger:hover { color: var(--danger); }
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(20, 24, 30, 0.35);
-  backdrop-filter: blur(3px);
+  background: var(--scrim);
+  backdrop-filter: blur(var(--blur-overlay)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--blur-overlay)) saturate(120%);
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -499,11 +684,12 @@ button.danger:hover { color: var(--danger); }
   z-index: 100;
 }
 .modal {
-  background: var(--panel);
-  border: 1px solid transparent;
-  border-radius: 20px;
-  box-shadow: 10px 10px 24px rgba(0, 0, 0, 0.25), -8px -8px 20px var(--sh-light),
-    0 16px 48px rgba(0, 0, 0, 0.22);
+  background: var(--surface-strong);
+  backdrop-filter: blur(var(--blur)) saturate(var(--sat));
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(var(--sat));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-3), var(--inner-hl);
   width: 100%;
   max-width: 440px;
 }
@@ -517,12 +703,28 @@ button.danger:hover { color: var(--danger); }
 .modal-head h2 { margin: 0; font-size: 16px; }
 .modal-body { padding: 16px; }
 .modal.wide { max-width: 640px; }
-/* Registry가 모달 안에 들어갈 때 중복 패널 테두리 제거 */
-.modal-body .panel { border: none; box-shadow: none; padding: 0; margin: 0; }
+/* Registry가 모달 안에 들어갈 때 중복 패널 제거 — 유리 위 유리는 낭비되는 합성 패스 */
+.modal-body .panel {
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
 .modal-body .panel > h2:first-child { display: none; }
 
-/* matrix / heatmap */
-.matrix-wrap { overflow-x: auto; margin: 0 -4px; }
+/* matrix / heatmap
+   표는 유리 위에 올린 '불투명 시트'. sticky 셀이 뒤 내용을 가려야 하고
+   히트맵 알파가 합성될 기준색이 필요하므로 반투명으로 만들면 안 된다. */
+.matrix-wrap {
+  overflow-x: auto;
+  margin: 0 -4px;
+  background: var(--table-base);
+  border-radius: var(--r-md);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
 .matrix {
   border-collapse: separate;
   border-spacing: 0;
@@ -539,8 +741,10 @@ button.danger:hover { color: var(--danger); }
   white-space: nowrap;
   border-bottom: 1px solid var(--border);
 }
+/* sticky 셀은 반드시 --table-base 와 같은 불투명색.
+   backdrop-filter 는 sticky 표 셀에서 브라우저별로 깨지므로 금지. */
 .matrix thead th, .matrix .rowlabel, .matrix .corner {
-  background: var(--panel);
+  background: var(--table-base);
   position: sticky;
 }
 .matrix thead th { top: 0; z-index: 2; color: var(--muted); font-weight: 600; }
@@ -579,7 +783,7 @@ button.danger:hover { color: var(--danger); }
   white-space: nowrap;
 }
 .matrix .rowlabel .rl-link:hover {
-  color: var(--accent);
+  color: var(--accent-ink);
   text-decoration: underline;
 }
 .matrix .rowlabel .rl-kind {
@@ -589,28 +793,17 @@ button.danger:hover { color: var(--danger); }
   font-size: 10px;
   color: var(--muted);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   padding: 0 4px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 .matrix .rowlabel .dot { display: inline-block; vertical-align: middle; margin-right: 6px; }
-/* 내역명 열은 평평하게 — 전역 button 뉴모피즘 음영까지 모두 제거
-   (.rl-link는 button 요소라 --shadow-sm / :active 함몰을 상속받는다) */
-.matrix .rowlabel .asset-badge { box-shadow: none; }
-.matrix .rowlabel .rl-kind { background: transparent; box-shadow: none; }
-.matrix .rowlabel .rl-link,
-.matrix .rowlabel .rl-link:hover,
-.matrix .rowlabel .rl-link:active,
-.matrix .rowlabel .rl-link:focus-visible {
-  box-shadow: none;
-  background: none;
-}
 /* 음영을 뺀 대신 키보드 포커스는 외곽선으로 */
 .matrix .rowlabel .rl-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .matrix tr.group-sep th, .matrix tr.group-sep td {
-  border-top: 2px solid var(--muted);
+  border-top: 2px solid var(--border-strong);
 }
 /* 고정지출 안 카테고리 경계 — 그룹 구분선보다 옅게 */
 .matrix tr.cat-sep th, .matrix tr.cat-sep td {
@@ -623,6 +816,19 @@ button.danger:hover { color: var(--danger); }
   text-overflow: ellipsis;
 }
 .matrix .cell.merged { text-align: left; font-weight: 600; }
+/* 히트맵 — MatrixView 는 --hm-c(색) / --hm-a(0~1 비율) 만 인라인으로 넘기고
+   알파 램프는 테마별 토큰(--hm-lo / --hm-hi)이 결정한다. */
+.matrix .cell[style*='--hm-a'] {
+  background: color-mix(
+    in srgb,
+    var(--hm-c) calc((var(--hm-lo) + var(--hm-hi) * var(--hm-a)) * 1%),
+    transparent
+  );
+}
+/* color-mix 미지원 브라우저 — 램프는 못 그려도 값이 있는 칸은 구분되게 */
+@supports not (background: color-mix(in srgb, red 50%, transparent)) {
+  .matrix .cell[style*='--hm-a'] { background: var(--surface-sunken); }
+}
 .matrix .mcol { text-align: right; font-variant-numeric: tabular-nums; }
 /* 월 열은 좁으므로 좌우 여백 축소 */
 .matrix .cell, .matrix .mcol { padding-left: 4px; padding-right: 5px; }
@@ -631,22 +837,115 @@ button.danger:hover { color: var(--danger); }
   border-left: 1px solid var(--border);
   position: sticky;
   right: 0;
-  background: var(--panel);
+  background: var(--table-base);
   z-index: 1;
 }
 .matrix thead .rowtot { top: 0; z-index: 3; }
-.matrix tfoot .rowtot { background: var(--panel-2); }
-.matrix tfoot td, .matrix tfoot th { font-weight: 700; background: var(--panel-2); }
+.matrix tfoot .rowtot { background: var(--table-base-2); }
+.matrix tfoot td, .matrix tfoot th { font-weight: 700; background: var(--table-base-2); }
 .matrix tfoot tr:first-child td, .matrix tfoot tr:first-child th { border-top: 2px solid var(--border); }
-.matrix tfoot .rowlabel { background: var(--panel-2); }
+.matrix tfoot .rowlabel { background: var(--table-base-2); }
 .matrix tfoot tr.subtotal-row td, .matrix tfoot tr.subtotal-row th {
   font-weight: 600;
   color: var(--muted);
 }
-/* 카테고리별 합계: 고정지출 합계 아래 단계로 들여쓰기 */
-.matrix tfoot tr.cattotal-row td, .matrix tfoot tr.cattotal-row th {
+
+/* ── 선결제 잔액 일시상환 칸 ── */
+.matrix .cell.prepaid {
+  outline: 1.5px dashed var(--accent);
+  outline-offset: -2px;
+  font-weight: 700;
+}
+
+/* ── 폼 체크박스 (전역 input{width:100%} 되돌리기) ── */
+.field .check-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+}
+.field .check-inline input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  padding: 0;
+  box-shadow: none;
+  accent-color: var(--accent);
+}
+.field .hint { display: block; margin-top: 4px; }
+
+/* ── 고정지출 카테고리 그룹 (접기/펼치기) ── */
+.matrix tr.catgroup-row td, .matrix tr.catgroup-row th {
+  background: var(--table-base-2);
+  font-weight: 600;
+}
+.matrix tr.catgroup-row .rowlabel { background: var(--table-base-2); }
+.matrix .cat-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.matrix .cat-toggle:hover .cat-name { color: var(--accent-ink); }
+.matrix .cat-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.matrix .cat-toggle .caret { flex: none; width: 10px; font-size: 10px; color: var(--muted); }
+.matrix .cat-toggle .dot { flex: none; width: 8px; height: 8px; margin: 0; }
+.matrix .cat-toggle .cat-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.matrix .cat-toggle .cat-count {
+  flex: none;
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  font-size: 10px;
   font-weight: 500;
   color: var(--muted);
+  background: var(--surface-sunken);
+  box-shadow: var(--sh-well);
 }
-.matrix tfoot tr.cattotal-row .rowlabel { padding-left: 18px; }
-.matrix tfoot tr.cattotal-row .dot { display: inline-block; vertical-align: middle; margin-right: 6px; }
+/* 그룹 하위 내역 행 들여쓰기 */
+.matrix tr.child-row .rowlabel { padding-left: 20px; }
+
+/* ── 결제일 경과 = 이번 달 결제 완료 ── */
+/* .prepaid 뒤에 선언 → 배경은 회색이 이기고(인라인), 점선 테두리는 유지 */
+.matrix .cell.settled {
+  background: var(--table-base-2);
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--muted);
+}
+.cardgroup.settled { opacity: 0.55; }
+.cardgroup.settled .cg-head .amt { text-decoration: line-through; }
+.settled-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 10px;
+  line-height: 16px;
+  color: var(--muted);
+  background: var(--surface-sunken);
+  box-shadow: var(--sh-well);
+  border-radius: var(--r-pill);
+  vertical-align: middle;
+}
+
+/* 라벨이 시스템/라이트/다크로 바뀔 때 툴바가 흔들리지 않도록 폭 고정 */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 84px;
+  justify-content: center;
+}

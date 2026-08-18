@@ -8,6 +8,7 @@ import MonthlySummary from './components/MonthlySummary'
 import MatrixView from './components/MatrixView'
 import BackupBar from './components/BackupBar'
 import Modal from './components/Modal'
+import ThemeToggle from './components/ThemeToggle'
 
 export type ModalType = 'asset' | 'category' | 'installment' | 'fixed' | 'registry'
 export type ModalState = { type: ModalType; editingId?: string }
@@ -52,6 +53,8 @@ export default function App() {
           </button>
           <span className="divider" />
           <BackupBar />
+          <span className="divider" />
+          <ThemeToggle />
         </div>
       </header>
 

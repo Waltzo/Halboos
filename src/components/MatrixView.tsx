@@ -1,7 +1,9 @@
-import { useMemo } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { useStore } from '../store'
 import { buildMatrix } from '../lib/matrix'
-import { formatKRW, hexToRgba, parseMonth } from '../lib/format'
+import type { CategoryTotal, MatrixRow } from '../lib/matrix'
+import { formatKRW, parseMonth, currentMonth } from '../lib/format'
+import { isAssetSettled } from '../lib/settled'
 import AssetBadge from './AssetBadge'
 import type { ModalState } from '../App'
 
@@ -26,25 +28,20 @@ function colHeader(ym: string, i: number): string {
   return i === 0 || month === 1 ? `${String(year).slice(2)}.${month}` : String(month)
 }
 
-// 합계 행 (할부 합계 / 카테고리별 / 고정지출 합계 / 월 합계)
+// 합계 행 (할부 합계 / 고정지출 합계 / 월 합계)
 function TotalRow({
   label,
   cells,
   kind,
-  color,
 }: {
   label: string
   cells: number[]
-  kind: 'sub' | 'cat' | 'total'
-  color?: string
+  kind: 'sub' | 'total'
 }) {
   const sum = cells.reduce((s, v) => s + v, 0)
   return (
-    <tr className={kind === 'total' ? '' : `${kind}total-row`}>
-      <th className="rowlabel">
-        {kind === 'cat' && <span className="dot" style={{ background: color ?? 'var(--border)' }} />}
-        {label}
-      </th>
+    <tr className={kind === 'total' ? '' : 'subtotal-row'}>
+      <th className="rowlabel">{label}</th>
       {cells.map((v, i) => (
         <td key={i} className="cell num total" title={v ? formatKRW(v) : ''}>
           {short(v)}
@@ -52,6 +49,183 @@ function TotalRow({
       ))}
       <td className="rowtot num total" title={sum ? formatKRW(sum) : ''}>
         {short(sum)}
+      </td>
+    </tr>
+  )
+}
+
+// 고정지출 카테고리 그룹 헤더 — 클릭하면 하위 내역 행이 펼쳐짐.
+// 집계 행이라 히트맵 틴트를 넣지 않는다 (한 카테고리가 여러 자산에 걸칠 수 있음)
+function CategoryGroupRow({
+  g,
+  expanded,
+  onToggle,
+  sep,
+}: {
+  g: CategoryTotal
+  expanded: boolean
+  onToggle: () => void
+  sep?: string
+}) {
+  const sum = g.cells.reduce((s, v) => s + v, 0)
+  return (
+    <tr className={['catgroup-row', sep ?? ''].filter(Boolean).join(' ')}>
+      <th className="rowlabel">
+        <button
+          type="button"
+          className="cat-toggle"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          title={`${g.name} ${expanded ? '접기' : '펼치기'} (고정지출 ${g.rows.length}건)`}
+        >
+          <span className="caret" aria-hidden="true">
+            {expanded ? '▾' : '▸'}
+          </span>
+          <span className="dot" style={{ background: g.color ?? 'var(--border)' }} />
+          <span className="cat-name">{g.name}</span>
+          <span className="cat-count">{g.rows.length}</span>
+        </button>
+      </th>
+      {g.cells.map((v, i) => (
+        <td key={i} className="cell num" title={v ? formatKRW(v) : ''}>
+          {short(v)}
+        </td>
+      ))}
+      <td className="rowtot num" title={sum ? formatKRW(sum) : ''}>
+        {short(sum)}
+      </td>
+    </tr>
+  )
+}
+
+// 내역 한 줄 (할부 또는 고정지출)
+function RowView({
+  row,
+  max,
+  months,
+  nowIdx,
+  child,
+  sep,
+  onEdit,
+}: {
+  row: MatrixRow
+  max: number
+  months: string[]
+  nowIdx: number
+  child?: boolean
+  sep?: string
+  onEdit: (m: ModalState) => void
+}) {
+  // 이 행의 자산이 카드이고 이번 달 결제일이 지났으면 이번 달 칸은 결제 완료
+  const rowSettled = nowIdx >= 0 && isAssetSettled(row.asset, months[nowIdx])
+  const settledAt = (i: number, v: number) => rowSettled && i === nowIdx && v > 0
+
+  // 히트맵 배경은 CSS 가 계산한다 — 알파 램프가 라이트/다크에서 달라야 하기 때문
+  // (index.css 의 --hm-lo / --hm-hi). 여기서는 색과 비율만 넘긴다.
+  const tintFor = (v: number): React.CSSProperties | undefined => {
+    if (!(v > 0) || !row.asset) return undefined
+    const ratio = max > 0 ? v / max : 0
+    return { '--hm-c': row.asset.color, '--hm-a': ratio } as React.CSSProperties
+  }
+
+  // 값이 있는 구간
+  let first = -1
+  let last = -1
+  row.cells.forEach((v, i) => {
+    if (v > 0) {
+      if (first < 0) first = i
+      last = i
+    }
+  })
+
+  // 고정지출: 연속된 같은 금액 구간을 한 셀로 병합.
+  // 단 결제 완료된 이번 달이 구간 안에 있으면 그 달만 떼어내 따로 회색 처리
+  type Seg = { start: number; end: number; settled: boolean }
+  const segs: Seg[] = []
+  if (row.kind === 'fixed' && first >= 0) {
+    if (rowSettled && first <= nowIdx && nowIdx <= last) {
+      if (first < nowIdx) segs.push({ start: first, end: nowIdx - 1, settled: false })
+      segs.push({ start: nowIdx, end: nowIdx, settled: true })
+      if (nowIdx < last) segs.push({ start: nowIdx + 1, end: last, settled: false })
+    } else {
+      segs.push({ start: first, end: last, settled: false })
+    }
+  }
+  const segStart = new Map(segs.map((s) => [s.start, s]))
+
+  const kindLabel = row.kind === 'inst' ? '할부' : (row.category?.name ?? '미분류')
+  const edit = () =>
+    onEdit({ type: row.kind === 'inst' ? 'installment' : 'fixed', editingId: row.id })
+
+  return (
+    <tr className={[child ? 'child-row' : '', sep ?? ''].filter(Boolean).join(' ')}>
+      <th className="rowlabel">
+        <span className="rl-inner">
+          <AssetBadge asset={row.asset} />
+          {/* 그룹 안에서는 카테고리 태그가 중복이므로 생략 → 내역 이름 폭 확보 */}
+          {!child && (
+            <span
+              className="rl-kind"
+              title={kindLabel}
+              style={
+                row.category
+                  ? { color: row.category.color, borderColor: row.category.color }
+                  : undefined
+              }
+            >
+              {kindLabel}
+            </span>
+          )}
+          <button
+            type="button"
+            className="rl-text rl-link"
+            onClick={edit}
+            title={`${row.label} 수정`}
+          >
+            {row.label}
+          </button>
+        </span>
+      </th>
+      {segs.length > 0
+        ? row.cells.map((v, i) => {
+            const seg = segStart.get(i)
+            if (seg)
+              return (
+                <td
+                  key={i}
+                  className={'cell merged' + (seg.settled ? ' settled' : '')}
+                  colSpan={seg.end - seg.start + 1}
+                  style={seg.settled ? undefined : tintFor(v)}
+                  title={formatKRW(v) + (seg.settled ? ' · 결제 완료' : '')}
+                >
+                  {short(v)}
+                </td>
+              )
+            if (i >= first && i <= last) return null
+            return <td key={i} className="cell" />
+          })
+        : row.cells.map((v, i) => {
+            const isSettled = settledAt(i, v)
+            const isPrepay = row.prepaidIdx === i
+            return (
+              <td
+                key={i}
+                className={'cell' + (isPrepay ? ' prepaid' : '') + (isSettled ? ' settled' : '')}
+                style={isSettled ? undefined : tintFor(v)}
+                title={
+                  v
+                    ? formatKRW(v) +
+                      (isPrepay ? ' · 선결제 잔액상환' : '') +
+                      (isSettled ? ' · 결제 완료' : '')
+                    : ''
+                }
+              >
+                {short(v)}
+              </td>
+            )
+          })}
+      <td className="rowtot num" title={row.rowTotal ? formatKRW(row.rowTotal) : ''}>
+        {short(row.rowTotal)}
       </td>
     </tr>
   )
@@ -68,6 +242,20 @@ export default function MatrixView({ onEdit }: { onEdit: (m: ModalState) => void
     [assets, categories, installments, fixedExpenses],
   )
 
+  // 펼쳐진 카테고리 key 집합. 기본은 전부 접힘(간소화).
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
+  const toggle = (key: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+
+  const instRows = useMemo(() => m.rows.filter((r) => r.kind === 'inst'), [m])
+  // 현재월 열 (computeHorizon이 현재월부터 시작하므로 사실상 항상 0)
+  const nowIdx = m.months.indexOf(currentMonth())
+
   if (m.rows.length === 0) {
     return (
       <div>
@@ -79,7 +267,7 @@ export default function MatrixView({ onEdit }: { onEdit: (m: ModalState) => void
     )
   }
 
-  const hasInst = m.rows.some((r) => r.kind === 'inst')
+  const hasInst = instRows.length > 0
   const hasFixed = m.rows.some((r) => r.kind === 'fixed')
 
   // 12개월이 화면에 들어오도록 표 너비를 월 수에 비례해 늘림 (나머지는 가로 스크롤)
@@ -110,109 +298,45 @@ export default function MatrixView({ onEdit }: { onEdit: (m: ModalState) => void
             </tr>
           </thead>
           <tbody>
-            {m.rows.map((row, ri) => {
-              const prev = ri > 0 ? m.rows[ri - 1] : undefined
-              // 할부→고정 경계는 진한 선, 고정지출 안의 카테고리 경계는 옅은 선
-              const kindSep = !!prev && prev.kind !== row.kind
-              const catSep =
-                !!prev &&
-                !kindSep &&
-                row.kind === 'fixed' &&
-                (prev.category?.id ?? '') !== (row.category?.id ?? '')
-              const bgFor = (v: number) => {
-                const ratio = m.max > 0 ? v / m.max : 0
-                return v > 0 && row.asset ? hexToRgba(row.asset.color, 0.15 + 0.75 * ratio) : 'transparent'
-              }
-              // 고정지출: 연속된 같은 금액 구간을 한 셀로 병합
-              let first = -1
-              let last = -1
-              row.cells.forEach((v, i) => {
-                if (v > 0) {
-                  if (first < 0) first = i
-                  last = i
-                }
-              })
-              const merge = row.kind === 'fixed' && first >= 0
-              const kindLabel = row.kind === 'inst' ? '할부' : (row.category?.name ?? '미분류')
-              const edit = () =>
-                onEdit({
-                  type: row.kind === 'inst' ? 'installment' : 'fixed',
-                  editingId: row.id,
-                })
+            {instRows.map((row) => (
+              <RowView key={row.id} row={row} max={m.max} months={m.months} nowIdx={nowIdx} onEdit={onEdit} />
+            ))}
+            {m.categoryTotals.map((g, gi) => {
+              const open = expanded.has(g.key)
               return (
-                <tr key={row.id} className={kindSep ? 'group-sep' : catSep ? 'cat-sep' : ''}>
-                  <th className="rowlabel">
-                    <span className="rl-inner">
-                      <AssetBadge asset={row.asset} />
-                      <span
-                        className="rl-kind"
-                        title={kindLabel}
-                        style={
-                          row.category
-                            ? { color: row.category.color, borderColor: row.category.color }
-                            : undefined
-                        }
-                      >
-                        {kindLabel}
-                      </span>
-                      <button
-                        type="button"
-                        className="rl-text rl-link"
-                        onClick={edit}
-                        title={`${row.label} 수정`}
-                      >
-                        {row.label}
-                      </button>
-                    </span>
-                  </th>
-                  {merge
-                    ? row.cells.map((v, i) => {
-                        if (i < first || i > last) return <td key={i} className="cell" />
-                        if (i === first)
-                          return (
-                            <td
-                              key={i}
-                              className="cell merged"
-                              colSpan={last - first + 1}
-                              style={{ background: bgFor(v) }}
-                              title={formatKRW(v)}
-                            >
-                              {short(v)}
-                            </td>
-                          )
-                        return null
-                      })
-                    : row.cells.map((v, i) => (
-                        <td
-                          key={i}
-                          className="cell"
-                          style={{ background: bgFor(v) }}
-                          title={v ? formatKRW(v) : ''}
-                        >
-                          {short(v)}
-                        </td>
-                      ))}
-                  <td className="rowtot num" title={row.rowTotal ? formatKRW(row.rowTotal) : ''}>
-                    {short(row.rowTotal)}
-                  </td>
-                </tr>
+                <Fragment key={g.key || '__none'}>
+                  <CategoryGroupRow
+                    g={g}
+                    expanded={open}
+                    onToggle={() => toggle(g.key)}
+                    sep={gi === 0 ? (hasInst ? 'group-sep' : '') : 'cat-sep'}
+                  />
+                  {open &&
+                    g.rows.map((row) => (
+                      <RowView
+                        key={row.id}
+                        row={row}
+                        max={m.max}
+                        months={m.months}
+                        nowIdx={nowIdx}
+                        child
+                        onEdit={onEdit}
+                      />
+                    ))}
+                </Fragment>
               )
             })}
           </tbody>
           <tfoot>
             {hasInst && <TotalRow label="할부 합계" cells={m.instTotals} kind="sub" />}
             {hasFixed && <TotalRow label="고정지출 합계" cells={m.fixedTotals} kind="sub" />}
-            {/* 카테고리별 내역은 고정지출 합계의 하위 항목 */}
-            {m.categoryTotals.length > 1 &&
-              m.categoryTotals.map((c) => (
-                <TotalRow key={c.key || '__none'} label={c.name} cells={c.cells} kind="cat" color={c.color} />
-              ))}
             <TotalRow label="월 합계" cells={m.colTotals} kind="total" />
           </tfoot>
         </table>
       </div>
       <div className="muted" style={{ marginTop: 8 }}>
-        색이 진할수록 큰 금액 · 금액에 마우스를 올리면 정확한 금액 표시 · 내역 이름을 클릭하면 수정
+        색이 진할수록 큰 금액 · 금액에 마우스를 올리면 정확한 금액 표시 · 내역 이름을 클릭하면 수정 ·
+        카테고리 이름을 클릭하면 고정지출 상세 펼치기
       </div>
       </div>
     </div>
